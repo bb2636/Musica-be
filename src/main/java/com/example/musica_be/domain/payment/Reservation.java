@@ -1,9 +1,6 @@
 package com.example.musica_be.domain.payment;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 import java.sql.Timestamp;
 
@@ -11,13 +8,17 @@ import java.sql.Timestamp;
 public class Reservation {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  int id;
-  int class_id;
-  int pay_type_id;
-  int status_id;
+  private Long id;
+  private int class_id;
+  @ManyToOne
+  @JoinColumn(name = "pay_type_id", nullable = false)
+  private ReservationType pay_type_id;
+  @ManyToOne
+  @JoinColumn(name = "status_id", nullable = false)
+  private ReservationStatus status_id;
 
-  int amount;
-  String payment_method;
-  Timestamp paid_at;
-  Timestamp created_at;
+  private int amount;
+  private String payment_method;
+  private Timestamp paid_at;
+  private Timestamp created_at;
 }
