@@ -11,5 +11,5 @@ public class Level {
     private Long id;
 
     @Column(nullable = false, unique = true)
-    private String name; //레벨 이름 (Beginner, Intermediate, Advanced)
+    private String name; //레벨 이름 (1- Beginner, 2- Intermediate, 3- Advanced)
 }

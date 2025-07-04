@@ -47,7 +47,7 @@ public class UserService {
         user.setEmail(registerReqDto.getEmail());
         user.setPassword(encodedPassword); // 암호화된 비밀번호 저장
         user.setRole(Role.valueOf(registerReqDto.getRole()));
-        user.setLevel(level);
+        user.setLevel(level); //(Beginner, Intermediate, Advanced)
         user.setCreatedAt(LocalDateTime.now());
         user.setIsApproved(!registerReqDto.getRole().equals("INSTRUCTOR")); // 기본적으로 INSTRUCTOR는 승인되지 않음
 
@@ -58,22 +58,18 @@ public class UserService {
     // 로그인
     public Map<String, String> login(LoginReqDto loginReqDto) {
         Optional<User> userOpt = userRepository.findByEmail(loginReqDto.getEmail());
-
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
-                // 액세스 토큰과 리프레시 토큰 생성
+                // 로그인 성공, JWT 토큰 생성
                 String accessToken = JwtUtils.generateAccessToken(user.getEmail());
                 String refreshToken = JwtUtils.generateRefreshToken(user.getEmail());
 
-                // 응답에 액세스 토큰과 리프레시 토큰 포함
-                Map<String, String> tokens = new HashMap<>();
-                tokens.put("accessToken", accessToken);
-                tokens.put("refreshToken", refreshToken);
-
-                return tokens;
+                return Map.of(
+                        "accessToken", accessToken,
+                        "refreshToken", refreshToken
+                );
             } else {
                 throw new IllegalArgumentException("Invalid password");
             }
