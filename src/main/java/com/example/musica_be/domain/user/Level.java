@@ -1,8 +1,10 @@
 package com.example.musica_be.domain.user;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
 @Entity
+@Getter
 public class Level {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

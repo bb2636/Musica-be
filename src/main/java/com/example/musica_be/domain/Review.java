@@ -1,5 +1,6 @@
 package com.example.musica_be.domain;
 
+import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
         import java.time.LocalDateTime;
 
