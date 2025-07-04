@@ -36,3 +36,106 @@ out/
 ### VS Code ###
 .vscode/
 application.yml
+
+==========================
+📁 Build & Dependency
+==========================
+.gradle/
+build/
+/build/
+!src//build/
+
+==========================
+📦 Java
+==========================
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.log
+.hprof
+hs_err_pid
+
+==========================
+⚙️ Gradle Wrapper
+==========================
+gradle-app.setting
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+
+==========================
+🧠 IntelliJ IDEA
+==========================
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+==========================
+💡 Eclipse / STS (Spring Tool Suite)
+==========================
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated
+.sts4-cache
+bin/
+!src/**/bin/
+
+==========================
+🧰 NetBeans
+==========================
+nbproject/private/
+nbbuild/
+dist/
+.nb-gradle/
+
+==========================
+⚙️ VS Code
+==========================
+.vscode/
+
+==========================
+⚠️ Application 설정 파일
+==========================
+application.yml
+application.properties
+
+==========================
+🍎 macOS
+==========================
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.icloud
+
+==========================
+🪟 Windows
+==========================
+Thumbs.db
+ehthumbs.db
+*.stackdump
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
