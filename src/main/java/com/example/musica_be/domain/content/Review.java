@@ -2,7 +2,7 @@ package com.example.musica_be.domain.content;
 
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
-        import java.time.LocalDateTime;
+import java.time.LocalDateTime;
 
 @Entity
 public class Review {
