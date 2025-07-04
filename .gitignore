@@ -1,14 +1,53 @@
-# ==========================
-# 📁 Build & Dependency
-# ==========================
+HELP.md
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+application.yml
+
+==========================
+📁 Build & Dependency
+==========================
 .gradle/
 build/
-**/build/
-!src/**/build/
+/build/
+!src//build/
 
-# ==========================
-# 📦 Java
-# ==========================
+==========================
+📦 Java
+==========================
 *.class
 *.jar
 *.war
@@ -16,28 +55,28 @@ build/
 *.zip
 *.tar.gz
 *.log
-*.hprof
-hs_err_pid*
+.hprof
+hs_err_pid
 
-# ==========================
-# ⚙️ Gradle Wrapper
-# ==========================
+==========================
+⚙️ Gradle Wrapper
+==========================
 gradle-app.setting
 gradle/wrapper/gradle-wrapper.jar
 gradle/wrapper/gradle-wrapper.properties
 
-# ==========================
-# 🧠 IntelliJ IDEA
-# ==========================
+==========================
+🧠 IntelliJ IDEA
+==========================
 .idea/
 *.iml
 *.ipr
 *.iws
 out/
 
-# ==========================
-# 💡 Eclipse / STS (Spring Tool Suite)
-# ==========================
+==========================
+💡 Eclipse / STS (Spring Tool Suite)
+==========================
 .project
 .classpath
 .settings/
@@ -47,28 +86,28 @@ out/
 bin/
 !src/**/bin/
 
-# ==========================
-# 🧰 NetBeans
-# ==========================
+==========================
+🧰 NetBeans
+==========================
 nbproject/private/
 nbbuild/
 dist/
 .nb-gradle/
 
-# ==========================
-# ⚙️ VS Code
-# ==========================
+==========================
+⚙️ VS Code
+==========================
 .vscode/
 
-# ==========================
-# ⚠️ Application 설정 파일
-# ==========================
+==========================
+⚠️ Application 설정 파일
+==========================
 application.yml
 application.properties
 
-# ==========================
-# 🍎 macOS
-# ==========================
+==========================
+🍎 macOS
+==========================
 .DS_Store
 .AppleDouble
 .LSOverride
@@ -86,9 +125,9 @@ Temporary Items
 .apdisk
 *.icloud
 
-# ==========================
-# 🪟 Windows
-# ==========================
+==========================
+🪟 Windows
+==========================
 Thumbs.db
 ehthumbs.db
 *.stackdump
