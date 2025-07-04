@@ -6,9 +6,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class ReservationStatus{
-  @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
-  int id;
-  String name;
+public class ReservationStatus {
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    int id;
+    String name;
 }

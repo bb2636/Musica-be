@@ -7,8 +7,8 @@ import jakarta.persistence.Id;
 
 @Entity
 public class ReservationType {
-  @Id
-  @GeneratedValue(strategy = GenerationType.AUTO)
-  int id;
-  String name;
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    int id;
+    String name;
 }

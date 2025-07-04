@@ -1,6 +1,7 @@
 package com.example.musica_be.domain.user;
 
 import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 
 @Entity
