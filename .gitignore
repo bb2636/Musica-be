@@ -1,38 +1,102 @@
-HELP.md
-.gradle
+# ==========================
+# 📁 Build & Dependency
+# ==========================
+.gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
+**/build/
+!src/**/build/
 
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
+# ==========================
+# 📦 Java
+# ==========================
+*.class
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.log
+*.hprof
+hs_err_pid*
 
-### IntelliJ IDEA ###
-.idea
-*.iws
+# ==========================
+# ⚙️ Gradle Wrapper
+# ==========================
+gradle-app.setting
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+
+# ==========================
+# 🧠 IntelliJ IDEA
+# ==========================
+.idea/
 *.iml
 *.ipr
+*.iws
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
 
-### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+# ==========================
+# 💡 Eclipse / STS (Spring Tool Suite)
+# ==========================
+.project
+.classpath
+.settings/
+.factorypath
+.apt_generated
+.sts4-cache
+bin/
+!src/**/bin/
 
-### VS Code ###
+# ==========================
+# 🧰 NetBeans
+# ==========================
+nbproject/private/
+nbbuild/
+dist/
+.nb-gradle/
+
+# ==========================
+# ⚙️ VS Code
+# ==========================
 .vscode/
+
+# ==========================
+# ⚠️ Application 설정 파일
+# ==========================
 application.yml
+application.properties
+
+# ==========================
+# 🍎 macOS
+# ==========================
+.DS_Store
+.AppleDouble
+.LSOverride
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+*.icloud
+
+# ==========================
+# 🪟 Windows
+# ==========================
+Thumbs.db
+ehthumbs.db
+*.stackdump
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
