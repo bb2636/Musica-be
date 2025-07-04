@@ -1,14 +1,12 @@
 package com.example.musica_be.domain.Settlement;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
 public class SettlementStatus {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  int id;
-  String name;
+  private Long id;
+  @Column(nullable = false, unique = true)
+  private String name;
 }
