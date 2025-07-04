@@ -9,6 +9,7 @@ import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -79,5 +80,24 @@ public class UserService {
         } else {
             throw new IllegalArgumentException("User not found");
         }
+    }
+
+    // 회원 탈퇴
+    @Transactional
+    public void deleteUser(Long userId) {
+        // 사용자 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // 사용자가 존재하면 사용자 삭제
+        userRepository.delete(user);
+        // 예약 삭제
+//        reservationRepository.deleteByUser(user);
+//
+//        // 찜 목록 삭제
+//        wishlistRepository.deleteByUser(user);
+//
+//        // 리뷰 삭제
+//         reviewRepository.deleteByUser(user);
     }
 }
