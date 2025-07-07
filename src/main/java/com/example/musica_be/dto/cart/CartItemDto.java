@@ -1,4 +1,4 @@
-package com.example.musica_be.dto.payment;
+package com.example.musica_be.dto.cart;
 
 import lombok.Builder;
 import lombok.Data;
