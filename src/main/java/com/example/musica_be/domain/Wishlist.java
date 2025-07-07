@@ -1,9 +1,17 @@
 package com.example.musica_be.domain;
 
+import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor
+@Builder
 public class Wishlist {
 
     @Id
@@ -11,15 +19,13 @@ public class Wishlist {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer wishlistId;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private com.example.musica_be.domain.user.User user;
+    private User user;
 
-//    @ManyToOne
-//    @JoinColumn(name = "class_id", nullable = false)
-//    private ClassEntity classEntity;
-    @Column(name = "class_id", nullable = false)
-    private Integer classId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", nullable = false)
+    private Classes classes;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
