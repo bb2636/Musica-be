@@ -1,10 +1,12 @@
 package com.example.musica_be.controller;
 
+import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.service.user.UserService;
 import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
 import com.example.musica_be.dto.user.UserResDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +25,8 @@ public class UserController {
             UserResDto userResDto = userService.registerUser(registerReqDto);
             return ResponseEntity.ok(userResDto);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(null);
+            // 예외 처리 시 UserResDto로 감싸서 반환
+            return ResponseEntity.badRequest().body(new UserResDto(e.getMessage()));
         }
     }
 
@@ -57,6 +60,19 @@ public class UserController {
             return ResponseEntity.ok("User deleted successfully");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(400).body("Error: " + e.getMessage());
+        }
+    }
+
+    // 회원 정보 수정
+    @PatchMapping("/users/{userId}")
+    public ResponseEntity<UserResDto> updateUser(
+            @PathVariable Long userId,
+            @RequestBody UpdateUserReqDto updateUserReqDto) {  // RequestBody로 데이터 받기
+        try {
+            UserResDto updatedUser = userService.updateUser(userId, updateUserReqDto); // DTO를 전달
+            return ResponseEntity.ok(updatedUser);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new UserResDto(e.getMessage()));
         }
     }
 }
