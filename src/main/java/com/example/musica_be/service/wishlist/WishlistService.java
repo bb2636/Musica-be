@@ -44,7 +44,7 @@ public class WishlistService {
         // 응답 반환
         return WishlistActionResponseDto.builder()
                 .status("success")
-                .message("찜이 추가되었습니다.")
+                .message("찜 등록이 완료되었습니다.")
                 .target(WishlistActionResponseDto.TargetDto.builder()
                         .type("class")
                         .id(classId)
@@ -53,5 +53,30 @@ public class WishlistService {
 
     }
 
+    public WishlistActionResponseDto deleteWishlist(long userId, long classId) {
+        // 클래스 존재 여부 확인
+        Classes classes = classesRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 존재하지 않습니다."));
+
+        // 유저 존재 확인
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
+
+        // 찜 존재 여부 확인 및 삭제
+        Wishlist wishlist = wishlistRepository.findByUserAndClasses(user,classes)
+                .orElseThrow(() -> new IllegalArgumentException("해당 찜이 존재하지 않습니다."));
+
+        wishlistRepository.delete(wishlist);
+
+        // 응답 반환
+        return WishlistActionResponseDto.builder()
+                .status("success")
+                .message("찜 해제가 완료되었습니다.")
+                .target(WishlistActionResponseDto.TargetDto.builder()
+                        .type("class")
+                        .id(classId)
+                        .build())
+                .build();
+    }
 
 }
