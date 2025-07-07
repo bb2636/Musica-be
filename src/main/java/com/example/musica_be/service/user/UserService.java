@@ -41,7 +41,7 @@ public class UserService {
         Level level = null;
         if ("USER".equalsIgnoreCase(registerReqDto.getRole())) {
             level = levelRepository.findById(registerReqDto.getLevelId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
         }
 
         // 비밀번호 암호화
@@ -72,8 +72,8 @@ public class UserService {
                 String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()));
 
                 return Map.of(
-                        "accessToken", accessToken,
-                        "refreshToken", refreshToken
+                    "accessToken", accessToken,
+                    "refreshToken", refreshToken
                 );
             } else {
                 throw new IllegalArgumentException("Invalid password");
@@ -88,7 +88,7 @@ public class UserService {
     public void deleteUser(Long userId) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 사용자가 존재하면 사용자 삭제
         userRepository.delete(user);
@@ -107,7 +107,7 @@ public class UserService {
     public UserResDto updateUser(Long userId, UpdateUserReqDto updateUserReqDto) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 이메일 중복 체크
         if (!user.getEmail().equals(updateUserReqDto.getEmail()) && userRepository.existsByEmail(updateUserReqDto.getEmail())) {
@@ -125,7 +125,7 @@ public class UserService {
 
         if (updateUserReqDto.getLevelId() != null) {
             Level level = levelRepository.findById(updateUserReqDto.getLevelId())
-                    .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
             user.setLevel(level);
         }
 

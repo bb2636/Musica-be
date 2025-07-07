@@ -1,9 +1,19 @@
 package com.example.musica_be.repository.cart;
 
-import com.example.musica_be.domain.payment.CartItem;
+import com.example.musica_be.domain.cart.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
+  void deleteByCartId(Long cartId);
+  boolean existsByCartIdAndClassId(Long cartId, Long classId);
+
+  @Query("SELECT c FROM CartItem c WHERE c.cart.id = :cartId")
+  List<CartItem> findAllByCartId(@Param("cartId") Long cartId);
 }
