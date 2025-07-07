@@ -40,6 +40,15 @@ public class User {
     @Column(nullable = false)
     private boolean isApproved;  // 승인 여부 필드 추가
 
+    // 생성자 추가: 이메일, 이름, 역할, 생성일시, 비밀번호를 받아서 객체 생성
+    public User(String email, String name, Role role, LocalDateTime createdAt, String password) {
+        this.email = email;
+        this.name = name;
+        this.role = role;
+        this.createdAt = createdAt;
+        this.password = password;
+    }
+
     public void setIsApproved(boolean isApproved) {
         this.isApproved = isApproved;
     }
