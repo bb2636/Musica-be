@@ -1,13 +1,14 @@
 package com.example.musica_be.domain.payment;
 
 import com.example.musica_be.domain.classes.Classes;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.*;
 
 import java.sql.Timestamp;
 
+@Entity
 public class CartItem {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "cart_id", nullable = false)
