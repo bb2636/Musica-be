@@ -1,8 +1,11 @@
 package com.example.musica_be.dto.payment;
 
-import java.sql.Timestamp;
+import java.util.List;
 
 public class CartDto {
-  private Long cart_id;
-  private Timestamp created_at;
+  private Long userId;
+  private List<CartItemDto> cartItems;
+  private Integer totalCount;
+  private Integer totalPrice;
+  private Integer totalDiscountPrice;
 }
