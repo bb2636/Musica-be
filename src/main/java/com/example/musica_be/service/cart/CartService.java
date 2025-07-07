@@ -23,7 +23,7 @@ public class CartService {
   public void cartRemove(){
   }
 
-  public void cartAllRemove(Jwts jwts){
-    cartRepository.deleteById();
-  }
+//  public void cartAllRemove(Jwts jwts){
+//    cartRepository.deleteById();
+//  }
 }
