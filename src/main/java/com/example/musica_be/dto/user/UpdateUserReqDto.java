@@ -4,10 +4,11 @@ import lombok.*;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class UpdateUserReqDto {
     private String name;
-    private String password; // 변경할 비밀번호
+    private String email;
+    private Long levelId;  // 수강생일 경우만 필요
 }
