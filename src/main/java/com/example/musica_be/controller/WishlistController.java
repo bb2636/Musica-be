@@ -2,6 +2,7 @@ package com.example.musica_be.controller;
 
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.wishlist.WishlistActionResponseDto;
+import com.example.musica_be.dto.wishlist.WishlistClassListResponseDto;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.service.wishlist.WishlistService;
 import com.example.musica_be.util.JwtUtils;
@@ -52,6 +53,19 @@ public class WishlistController {
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
 
         WishlistActionResponseDto response = wishlistService.deleteWishlist(user.getId(), classId);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/classes")
+    public ResponseEntity<WishlistClassListResponseDto> getWishList(
+            @RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        String email = JwtUtils.getEmailFromToken(token);
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
+
+        WishlistClassListResponseDto response = wishlistService.getWishlistClasses(user.getId());
 
         return ResponseEntity.ok(response);
     }
