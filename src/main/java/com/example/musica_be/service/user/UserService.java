@@ -68,8 +68,8 @@ public class UserService {
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
                 // 로그인 성공, JWT 토큰 생성
-                String accessToken = JwtUtils.generateAccessToken(user.getEmail());
-                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail());
+                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()));
+                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()));
 
                 return Map.of(
                         "accessToken", accessToken,
