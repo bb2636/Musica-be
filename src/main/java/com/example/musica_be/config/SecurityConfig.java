@@ -60,20 +60,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()  // CSRF 비활성화
-                .authorizeHttpRequests()  // authorizeRequests()에서 authorizeHttpRequests()로 변경
-                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()  // 로그인 관련 경로 허용
-                .anyRequest().authenticated()  // 나머지 경로는 인증된 사용자만 접근 허용
+                .csrf().disable()
+                .authorizeHttpRequests()
+                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")  // ADMIN 역할을 가진 사용자만 접근 허용
+                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")  // INSTRUCTOR 역할을 가진 사용자만 접근 허용
+                .anyRequest().authenticated()
                 .and()
-                .oauth2Login()  // oauth2Login()은 Spring Security 6.x에서 여전히 사용 가능
-                .clientRegistrationRepository(clientRegistrationRepository())  // 카카오 OAuth2 클라이언트 설정
-                .defaultSuccessUrl("/user/home", true)  // 로그인 성공 후 이동할 URL
-                .failureUrl("/api/auth/login?error=true")  // 로그인 실패 시 이동할 URL
+                .oauth2Login()
+                .clientRegistrationRepository(clientRegistrationRepository())
+                .defaultSuccessUrl("/user/home", true)
+                .failureUrl("/api/auth/login?error=true")
                 .and()
-                .addFilterBefore(new JwtFilter(authenticationManager(http)), OAuth2LoginAuthenticationFilter.class);  // JWT 필터 추가
+                .addFilterBefore(new JwtFilter(authenticationManager(http)), OAuth2LoginAuthenticationFilter.class);
 
         return http.build();
     }
+
 
     @Bean
     public InMemoryClientRegistrationRepository clientRegistrationRepository() {
