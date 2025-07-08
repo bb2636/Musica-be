@@ -2,7 +2,7 @@ package com.example.musica_be.domain.Settlement;
 
 import jakarta.persistence.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 public class Settlement {
@@ -20,6 +20,6 @@ public class Settlement {
   private Long net_amount;
 
   private String settlement_month;
-  private Timestamp settled_at;
-  private Timestamp created_at;
+  private LocalDateTime settled_at;
+  private LocalDateTime created_at;
 }

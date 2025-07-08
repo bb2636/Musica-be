@@ -4,7 +4,7 @@ import com.example.musica_be.domain.classes.Classes;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -22,5 +22,5 @@ public class CartItem {
   private Classes classes;
 
   private Long quantity;
-  private Timestamp added_at;
+  private LocalDateTime added_at;
 }

@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,34 +39,28 @@ public class CartService {
     if (cart == null) {
       User user = userRepository.findById(userId)
           .orElseThrow(() -> new RuntimeException("User not found"));
-
       cart = new Cart();
       cart.setUser(user);
-      cart.setCreated_at(new Timestamp(System.currentTimeMillis()));
+      cart.setCreated_at(LocalDateTime.now());
       cartRepository.save(cart);
     }
 
     //CartDto 생성
-    List<CartItem> cartItems = cartItemRepository.findAllByCartId(cart.getId());
+    List<CartItem> cartItems = cartItemRepository.findAllByCartIdWithClasses(cart.getId());
     List<CartItemDto> cartItemDtoList = new ArrayList<CartItemDto>();
+    int totalPrice = 0;
+
     for (CartItem cartItem : cartItems) {
-      Classes classes = classesRepository.findById(cartItem.getClasses().getId())
-          .orElseThrow(() -> new RuntimeException("클래스를 찾을 수 없습니다."));
-
-      CartItemDto dto = CartItemDto.builder()
-          .classId(classes.getId())
-          .title(classes.getTitle())
-          .thumbnailUrl(classes.getThumbnailUrl())
-          .price(classes.getClassPrice())
-          .build();
-
+      Classes classes = cartItem.getClasses();
+      CartItemDto dto = CartItemDto.fromClasses(classes);
+      totalPrice += classes.getClassPrice();
       cartItemDtoList.add(dto);
     }
-    CartItemDto.builder()
-        .build();
 
     return CartDto.builder()
         .userId(userId)
+        .totalPrice(totalPrice)
+        .totalCount(cartItems.size())
         .cartItems(cartItemDtoList)
         .build();
   }

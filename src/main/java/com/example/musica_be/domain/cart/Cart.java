@@ -4,7 +4,7 @@ import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Data
 @Entity
@@ -17,5 +17,5 @@ public class Cart {
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  private Timestamp created_at;
+  private LocalDateTime created_at;
 }
