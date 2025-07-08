@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public interface CartItemRepository extends JpaRepository<CartItem, Long> {
   void deleteByCartId(Long cartId);
-  boolean existsByCartIdAndClassId(Long cartId, Long classId);
+  boolean existsByCartIdAndClassesId(Long cartId, Long classesId);
 
   @Query("SELECT ci FROM CartItem ci JOIN FETCH ci.classes WHERE ci.cart.id = :cartId")
   List<CartItem> findAllByCartIdWithClasses(@Param("cartId") Long cartId);

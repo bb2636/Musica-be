@@ -37,7 +37,7 @@ public class UserController {
         }
     }
 
-    // 로그인
+    // 일반 로그인 (사용자, 강사 로그인)
     @PostMapping("/auth/login")
     public ResponseEntity<Map<String, String>> login(@RequestBody LoginReqDto loginReqDto) {
         try {
@@ -47,6 +47,7 @@ public class UserController {
             return ResponseEntity.status(400).body(Map.of("message", e.getMessage())); // 로그인 실패 시 메시지 반환
         }
     }
+
 
     // 로그아웃 (Optional - 서버 측 처리)
     @PostMapping("/auth/logout")

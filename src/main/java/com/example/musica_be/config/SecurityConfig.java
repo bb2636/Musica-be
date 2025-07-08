@@ -62,29 +62,30 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()
+                .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login").permitAll()  // 일반 로그인은 모두 허용
                 .requestMatchers("/admin/**").hasRole("ADMIN")  // ADMIN 역할을 가진 사용자만 접근 허용
                 .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")  // INSTRUCTOR 역할을 가진 사용자만 접근 허용
                 .anyRequest().authenticated()
                 .and()
-                .oauth2Login()
+                .formLogin()  // 기본 로그인 설정
+                .loginPage("/api/auth/login")  // 기본 로그인 페이지 경로
+                .permitAll()
+                .and()
+                .oauth2Login()  // 카카오 로그인 설정
                 .clientRegistrationRepository(clientRegistrationRepository())
                 .defaultSuccessUrl("/user/home", true)
-                .failureUrl("/api/auth/login?error=true")
-                .and()
-                .addFilterBefore(new JwtFilter(authenticationManager(http)), OAuth2LoginAuthenticationFilter.class);
+                .failureUrl("/api/auth/login?error=true");
 
         return http.build();
     }
 
-
+    // 카카오 OAuth2 클라이언트 설정
     @Bean
     public InMemoryClientRegistrationRepository clientRegistrationRepository() {
         if (kakaoConfig.getClientId() == null || kakaoConfig.getClientId().isEmpty()) {
             throw new IllegalStateException("Kakao clientId cannot be empty");
         }
 
-        // 카카오 OAuth2 클라이언트 등록
         ClientRegistration kakaoRegistration = ClientRegistration.withRegistrationId("kakao")
                 .clientId(kakaoConfig.getClientId())
                 .clientSecret(kakaoConfig.getClientSecret())
@@ -100,3 +101,4 @@ public class SecurityConfig {
         return new InMemoryClientRegistrationRepository(kakaoRegistration);  // 카카오 등록 정보를 InMemory 저장소에 등록
     }
 }
+
