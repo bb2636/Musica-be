@@ -40,13 +40,13 @@ public class SocialAuthController {
             // 1. 인가 코드로 카카오에 액세스 토큰 요청
             String tokenUri = "https://kauth.kakao.com/oauth/token";
             String body = "grant_type=authorization_code&client_id=" + kakaoConfig.getClientId() +
-                    "&redirect_uri=" + kakaoConfig.getRedirectUri() + "&code=" + code;
+                "&redirect_uri=" + kakaoConfig.getRedirectUri() + "&code=" + code;
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    tokenUri,
-                    HttpMethod.POST,
-                    new HttpEntity<>(body),
-                    String.class
+                tokenUri,
+                HttpMethod.POST,
+                new HttpEntity<>(body),
+                String.class
             );
 
             String accessToken = parseAccessToken(response.getBody());
@@ -57,10 +57,10 @@ public class SocialAuthController {
             headers.setBearerAuth(accessToken);
 
             ResponseEntity<String> userInfoResponse = restTemplate.exchange(
-                    userInfoUri,
-                    HttpMethod.GET,
-                    new HttpEntity<>(headers),
-                    String.class
+                userInfoUri,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                String.class
             );
 
             String email = parseEmail(userInfoResponse.getBody());
