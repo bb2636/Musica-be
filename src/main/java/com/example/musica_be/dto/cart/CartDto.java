@@ -12,5 +12,4 @@ public class CartDto {
   private List<CartItemDto> cartItems;
   private Integer totalCount;
   private Integer totalPrice;
-  private Integer totalDiscountPrice;
 }

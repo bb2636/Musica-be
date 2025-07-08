@@ -5,7 +5,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 public class Reservation {
@@ -18,6 +18,6 @@ public class Reservation {
 
   int amount;
   String payment_method;
-  Timestamp paid_at;
-  Timestamp created_at;
+  LocalDateTime paid_at;
+  LocalDateTime created_at;
 }

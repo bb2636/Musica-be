@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 @Builder
-public class CartAllDeleteSuccessDto {
+public class CartAllDeleteResponseDto {
   String status;
   String message;
   List<Long> deleted;
