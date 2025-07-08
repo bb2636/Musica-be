@@ -1,5 +1,7 @@
 package com.example.musica_be.service.user;
 
+import com.example.musica_be.domain.Review;
+import com.example.musica_be.domain.Wishlist;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.Role;
 import com.example.musica_be.domain.user.SocialAccount;
@@ -8,9 +10,11 @@ import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
 import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.SocialAccountRepository;
 import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +34,8 @@ public class UserService {
     private final LevelRepository levelRepository;
     private final PasswordEncoder passwordEncoder;
     private final SocialAccountRepository socialAccountRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
 
     // 이메일로 사용자 찾기
     public Optional<User> findByEmail(String email) {
@@ -166,7 +173,7 @@ public class UserService {
 
     // 회원 정보 수정
     @Transactional
-    public UserResDto updateUser(Long userId, UpdateUserReqDto updateUserReqDto) {
+    public UserResDto updateUserInfo(Long userId, UpdateUserReqDto updateUserReqDto) {
         // 사용자 확인
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
@@ -194,4 +201,28 @@ public class UserService {
         User updatedUser = userRepository.save(user);
         return new UserResDto(updatedUser);
     }
+      // 수강 중인 강의 목록 조회
+//    public List<Enrollment> getCurrentEnrollments(Long userId) {
+//        return enrollmentRepository.findByUserIdAndStatus(userId, "ENROLLED");
+//    }
+//
+      // 결제 내역 조회
+//    public List<Payment> getPaymentHistory(Long userId) {
+//        return paymentRepository.findByUserId(userId);
+//    }
+
+    // 찜 목록 조회
+    public List<Wishlist> getWishlist(Long userId) {
+        return wishlistRepository.findByUserId(userId);
+    }
+
+      // 후기 목록 조회
+    public List<Review> getReviews(Long userId) {
+        return reviewRepository.findByUserId(userId);
+    }
+//
+      // 내가 등록한 질문 목록 조회
+//    public List<Question> getUserQuestions(Long userId) {
+//        return questionRepository.findByUserId(userId);
+//    }
 }
