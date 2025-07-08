@@ -1,9 +1,7 @@
 package com.example.musica_be.domain.payment;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.example.musica_be.domain.classes.Classes;
+import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
 
@@ -12,9 +10,18 @@ public class Reservation {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   int id;
-  int class_id;
-  int pay_type_id;
-  int status_id;
+
+  @ManyToOne
+  @JoinColumn(name = "class_id", nullable = false)
+  Classes classes;
+
+  @ManyToOne
+  @JoinColumn(name = "pay_type_id", nullable = false)
+  ReservationType pay_type_id;
+
+  @ManyToOne
+  @JoinColumn(name = "status_id", nullable = false)
+  ReservationStatus status_id;
 
   int amount;
   String payment_method;
