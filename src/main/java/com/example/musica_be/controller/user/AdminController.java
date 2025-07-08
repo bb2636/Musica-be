@@ -1,6 +1,6 @@
 package com.example.musica_be.controller.user;
 
-import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.service.user.AdminService;
 import com.example.musica_be.domain.user.User;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -46,6 +47,17 @@ public class AdminController {
             return ResponseEntity.ok("Instructor rejected successfully.");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Error: " + e.getMessage());
+        }
+    }
+    //관리자 로그인
+    @PostMapping("/login")
+    public ResponseEntity<Map<String, String>> adminLogin(@RequestBody LoginReqDto loginReqDto) {
+        try {
+            // 로그인 성공 시 JWT 토큰 반환
+            Map<String, String> tokens = adminService.adminLogin(loginReqDto);
+            return ResponseEntity.ok(tokens); // JSON 형태로 반환
+        } catch (Exception e) {
+            return ResponseEntity.status(400).body(Map.of("message", e.getMessage())); // 실패 시 에러 메시지 반환
         }
     }
 }

@@ -72,7 +72,7 @@ public class CartService {
     Cart cart = cartRepository.findByUserId(userId);
 
     // 클래스가 이미 장바구니에 담겼는지 체크
-    boolean exists = cartItemRepository.existsByCartIdAndClassId(cart.getId(), classId);
+    boolean exists = cartItemRepository.existsByCartIdAndClassesId(cart.getId(), classId);
     if (exists) {
       throw new IllegalStateException("이미 장바구니에 담긴 강의입니다.");
     }
