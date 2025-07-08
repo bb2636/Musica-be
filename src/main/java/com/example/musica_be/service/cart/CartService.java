@@ -31,7 +31,7 @@ public class CartService {
 
   @Transactional
   // 유저의 카트 정보
-  public CartDto getCart(String jwt) {
+  public CartDto getCartItemList(String jwt) {
     Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     Cart cart = cartRepository.findByUserId(userId);
 
@@ -67,7 +67,7 @@ public class CartService {
 
   // 카트 추가
   @Transactional
-  public void cartAdd(Long classId, String jwt) {
+  public CartResponseDto cartItemAdd(Long classId, String jwt) {
     Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     Cart cart = cartRepository.findByUserId(userId);
 
@@ -84,10 +84,15 @@ public class CartService {
     cartItem.setCart(cart);
     cartItem.setClasses(classEntity);
     cartItemRepository.save(cartItem);
+
+    return CartResponseDto.builder()
+        .message("장바구니에 강의가 추가되었습니다.")
+        .status("success")
+        .build();
   }
 
   @Transactional
-  public CartResponseDto cartListRemove(String jwt, CartItemIdsDto cartItemIdsDto) {
+  public CartResponseDto cartItemRemove(String jwt, CartItemIdsDto cartItemIdsDto) {
     List<Long> ids = cartItemIdsDto.getCartItemIds();
     if (ids == null || ids.isEmpty()) {
       return CartResponseDto.builder()
@@ -113,9 +118,9 @@ public class CartService {
           .build();
     }
   }
-
+ // 모든 카트 아이템 삭제
   @Transactional
-  public CartResponseDto cartAllRemove(String jwt) {
+  public CartResponseDto cartItemAllRemove(String jwt) {
     try {
       Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
       Cart cart = cartRepository.findByUserId(userId);
