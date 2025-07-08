@@ -15,19 +15,21 @@ public class JwtUtils {
   private static final long ACCESS_TOKEN_EXPIRATION_TIME = 3600_000;  // 1시간 (밀리초)
   private static final long REFRESH_TOKEN_EXPIRATION_TIME = 7 * 24 * 3600_000;  // 7일 (밀리초)
 
-  // 액세스 토큰 생성
-  public static String generateAccessToken(String email, String userId) {
+  // 액세스 토큰 생성 (role 추가)
+  public static String generateAccessToken(String email, String userId, String role) {
     return Jwts.builder()
-        .setSubject(userId)
-        .claim("email", email)
-        .setIssuedAt(new Date())
-        .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
-        .signWith(SECRET_KEY)
-        .compact();
+            .setSubject(userId)  // userId를 subject로 설정
+            .claim("email", email)
+            .claim("role", role)  // role을 클레임으로 추가
+            .setIssuedAt(new Date())
+            .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
+            .signWith(SECRET_KEY)
+            .compact();
   }
-  // 리프레시 토큰 생성
-  public static String generateRefreshToken(String email, String userId) {
-    return generateAccessToken( email, userId);
+
+  // 리프레시 토큰 생성 (role 추가)
+  public static String generateRefreshToken(String email, String userId, String role) {
+    return generateAccessToken(email, userId, role);  // 리프레시 토큰도 액세스 토큰처럼 처리
   }
 
   // 토큰에서 이메일 추출
@@ -48,12 +50,25 @@ public class JwtUtils {
         .getBody()
         .getSubject();
   }
+  // 토큰에서 role 추출
+  public static String getRoleFromToken(String token) {
+    Claims claims = Jwts.parserBuilder()
+            .setSigningKey(SECRET_KEY)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
+    return claims.get("role", String.class);
+  }
 
-  // 리프레시 토큰을 이용하여 액세스 토큰 갱신
+  // 리프레시 토큰을 이용하여 액세스 토큰 갱신 (role 포함)
   public static String refreshAccessToken(String refreshToken) {
+    // 이메일, 사용자 ID, 역할 정보 추출
     String email = getEmailFromToken(refreshToken);
-    String user_id = getUserIdFromToken(refreshToken);
-    return generateAccessToken(email, user_id);
+    String userId = getUserIdFromToken(refreshToken);
+    String role = getRoleFromToken(refreshToken);  // role 정보 추출
+
+    // 액세스 토큰 갱신 시 role 정보도 함께 포함
+    return generateAccessToken(email, userId, role);  // role을 포함하여 새로운 액세스 토큰 생성
   }
 
   // 토큰이 만료되었는지 확인

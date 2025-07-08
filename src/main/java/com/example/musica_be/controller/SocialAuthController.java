@@ -79,9 +79,9 @@ public class SocialAuthController {
             // 5. 소셜 계정 연결
             userService.connectSocialAccount(kakaoId, "kakao", user.get());
 
-            // 6. JWT 생성 및 응답
-            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail());
-            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail());
+            // 6. JWT 생성 및 응답 (role을 USER로 설정)
+            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail(), kakaoId, "USER");
+            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail(), kakaoId, "USER");
 
             return ResponseEntity.ok("redirect:/user/signup?email=" + email + "&name=" + name + "&role=USER");
 
@@ -89,6 +89,7 @@ public class SocialAuthController {
             return ResponseEntity.status(400).body("Error during Kakao login");
         }
     }
+
 
     // 회원가입 페이지에서 'role'과 'level'을 선택하고 최종적으로 DB에 저장
     @PostMapping("/user/signup")

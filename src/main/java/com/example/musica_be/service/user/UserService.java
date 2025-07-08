@@ -138,12 +138,12 @@ public class UserService {
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
                 // 로그인 성공, JWT 토큰 생성
-                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()));
-                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()));
+                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
+                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
 
                 return Map.of(
-                    "accessToken", accessToken,
-                    "refreshToken", refreshToken
+                        "accessToken", accessToken,
+                        "refreshToken", refreshToken
                 );
             } else {
                 throw new IllegalArgumentException("Invalid password");
