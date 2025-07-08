@@ -25,7 +25,6 @@ public class UserController {
             UserResDto userResDto = userService.registerUser(registerReqDto);
             return ResponseEntity.ok(userResDto);
         } catch (Exception e) {
-            // 예외 처리 시 UserResDto로 감싸서 반환
             return ResponseEntity.badRequest().body(new UserResDto(e.getMessage()));
         }
     }
@@ -45,7 +44,6 @@ public class UserController {
     @PostMapping("/auth/logout")
     public ResponseEntity<String> logout() {
         try {
-            // 로그아웃 시 서버 측에서 처리할 내용 (예: 세션 무효화 등)
             return ResponseEntity.ok("Logged out successfully");
         } catch (Exception e) {
             return ResponseEntity.status(400).body("Error: " + e.getMessage());
@@ -67,9 +65,9 @@ public class UserController {
     @PatchMapping("/users/{userId}")
     public ResponseEntity<UserResDto> updateUser(
             @PathVariable Long userId,
-            @RequestBody UpdateUserReqDto updateUserReqDto) {  // RequestBody로 데이터 받기
+            @RequestBody UpdateUserReqDto updateUserReqDto) {
         try {
-            UserResDto updatedUser = userService.updateUser(userId, updateUserReqDto); // DTO를 전달
+            UserResDto updatedUser = userService.updateUser(userId, updateUserReqDto);
             return ResponseEntity.ok(updatedUser);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new UserResDto(e.getMessage()));

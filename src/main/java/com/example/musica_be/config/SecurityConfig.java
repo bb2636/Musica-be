@@ -1,20 +1,27 @@
 package com.example.musica_be.config;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.core.AuthorizationGrantType;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.client.web.OAuth2LoginAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
+
+    @Autowired
+    private KakaoConfig kakaoConfig;
 
     // PasswordEncoder 빈 등록 (BCrypt 암호화 사용)
     @Bean
@@ -26,7 +33,6 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return new InMemoryUserDetailsManager(
-                // 예시 사용자 정보
                 org.springframework.security.core.userdetails.User.withUsername("user")
                         .password(passwordEncoder().encode("password"))
                         .roles("USER")
@@ -34,6 +40,10 @@ public class SecurityConfig {
                 org.springframework.security.core.userdetails.User.withUsername("admin")
                         .password(passwordEncoder().encode("admin"))
                         .roles("ADMIN")
+                        .build(),
+                org.springframework.security.core.userdetails.User.withUsername("instructor")
+                        .password(passwordEncoder().encode("instructorPassword"))
+                        .roles("INSTRUCTOR")
                         .build()
         );
     }
@@ -50,13 +60,40 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()  // CSRF 보호 비활성화 (필요 시 활성화)
-                .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/users/register", "/api/auth/login").permitAll()  // 회원가입과 로그인 API는 인증 없이 접근 가능
-                        .anyRequest().authenticated()  // 그 외 모든 요청은 인증 필요
-                )
-                .addFilterBefore(new JwtFilter(authenticationManager(http)), UsernamePasswordAuthenticationFilter.class);  // JWT 필터 추가
+                .csrf().disable()  // CSRF 비활성화
+                .authorizeHttpRequests()  // authorizeRequests()에서 authorizeHttpRequests()로 변경
+                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()  // 로그인 관련 경로 허용
+                .anyRequest().authenticated()  // 나머지 경로는 인증된 사용자만 접근 허용
+                .and()
+                .oauth2Login()  // oauth2Login()은 Spring Security 6.x에서 여전히 사용 가능
+                .clientRegistrationRepository(clientRegistrationRepository())  // 카카오 OAuth2 클라이언트 설정
+                .defaultSuccessUrl("/user/home", true)  // 로그인 성공 후 이동할 URL
+                .failureUrl("/api/auth/login?error=true")  // 로그인 실패 시 이동할 URL
+                .and()
+                .addFilterBefore(new JwtFilter(authenticationManager(http)), OAuth2LoginAuthenticationFilter.class);  // JWT 필터 추가
 
         return http.build();
+    }
+
+    @Bean
+    public InMemoryClientRegistrationRepository clientRegistrationRepository() {
+        if (kakaoConfig.getClientId() == null || kakaoConfig.getClientId().isEmpty()) {
+            throw new IllegalStateException("Kakao clientId cannot be empty");
+        }
+
+        // 카카오 OAuth2 클라이언트 등록
+        ClientRegistration kakaoRegistration = ClientRegistration.withRegistrationId("kakao")
+                .clientId(kakaoConfig.getClientId())
+                .clientSecret(kakaoConfig.getClientSecret())
+                .redirectUri(kakaoConfig.getRedirectUri())
+                .authorizationUri("https://kauth.kakao.com/oauth/authorize")
+                .tokenUri("https://kauth.kakao.com/oauth/token")
+                .userInfoUri("https://kapi.kakao.com/v2/user/me")
+                .userNameAttributeName("id")
+                .clientName("Kakao")
+                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+                .build();
+
+        return new InMemoryClientRegistrationRepository(kakaoRegistration);  // 카카오 등록 정보를 InMemory 저장소에 등록
     }
 }

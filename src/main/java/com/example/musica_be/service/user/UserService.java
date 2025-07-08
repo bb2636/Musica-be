@@ -2,12 +2,14 @@ package com.example.musica_be.service.user;
 
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.Role;
+import com.example.musica_be.domain.user.SocialAccount;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
 import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.repository.user.LevelRepository;
+import com.example.musica_be.repository.user.SocialAccountRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
@@ -26,13 +28,45 @@ public class UserService {
     private final UserRepository userRepository;
     private final LevelRepository levelRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SocialAccountRepository socialAccountRepository;
 
-    // 회원가입
+    // 이메일로 사용자 찾기
+    public Optional<User> findByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    // 사용자 저장 (새로운 사용자 또는 수정된 사용자)
+    public User save(User user) {
+        return userRepository.save(user);
+    }
+
+    // 소셜 계정 연결
+    @Transactional
+    public void connectSocialAccount(String socialId, String provider, User user) {
+        // 소셜 계정이 이미 연결된 경우 확인
+        Optional<SocialAccount> existingAccount = socialAccountRepository.findBySocialIdAndProvider(socialId, provider);
+        if (existingAccount.isPresent()) {
+            return; // 이미 연결된 소셜 계정이 있으면 추가로 처리하지 않음
+        }
+
+        // 새로운 소셜 계정 연결
+        SocialAccount socialAccount = SocialAccount.builder()
+                .socialId(socialId)
+                .provider(provider)
+                .user(user)
+                .build();
+
+        // 소셜 계정 저장
+        socialAccountRepository.save(socialAccount);
+    }
+
+    // 기존 사용자 등록
     public UserResDto registerUser(RegisterReqDto registerReqDto) {
         // 이메일 중복 체크
         if (userRepository.existsByEmail(registerReqDto.getEmail())) {
             throw new IllegalArgumentException("이미 등록된 이메일입니다.");
         }
+
         // role이 USER일 경우만 levelId를 받을 수 있게 처리
         if ("USER".equalsIgnoreCase(registerReqDto.getRole()) && registerReqDto.getLevelId() == null) {
             throw new IllegalArgumentException("Level must be selected for users.");
@@ -47,6 +81,7 @@ public class UserService {
         // 비밀번호 암호화
         String encodedPassword = passwordEncoder.encode(registerReqDto.getPassword());
 
+        // 사용자 정보 설정
         User user = new User();
         user.setName(registerReqDto.getName());
         user.setEmail(registerReqDto.getEmail());
@@ -58,6 +93,41 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
         return new UserResDto(savedUser);  // UserResDto로 변환하여 응답
+    }
+
+    // OAuth2 로그인 후 받은 정보로 회원가입 처리
+    public UserResDto registerUserFromOAuth(String email, String name, String role, Long levelId) {
+        if ("USER".equals(role) && levelId == null) {
+            throw new IllegalArgumentException("Level must be selected for users.");
+        }
+
+        Level level = null;
+        if ("USER".equals(role)) {
+            level = levelRepository.findById(levelId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
+        }
+
+        // 이미 존재하는 사용자 체크
+        Optional<User> existingUser = userRepository.findByEmail(email);
+        if (existingUser.isPresent()) {
+            return new UserResDto(existingUser.get()); // 기존 사용자 반환
+        }
+
+        // 새로운 사용자 생성
+        User user = new User();
+        user.setEmail(email);
+        user.setName(name);
+        user.setRole(Role.valueOf(role)); // USER 또는 INSTRUCTOR
+        user.setCreatedAt(LocalDateTime.now());
+        user.setIsApproved(true);
+
+        // USER인 경우만 level을 설정
+        if ("USER".equals(role)) {
+            user.setLevel(level);
+        }
+
+        userRepository.save(user); // DB에 저장
+        return new UserResDto(user);  // UserResDto로 변환하여 응답
     }
 
     // 로그인
@@ -92,14 +162,6 @@ public class UserService {
 
         // 사용자가 존재하면 사용자 삭제
         userRepository.delete(user);
-        // 예약 삭제
-//        reservationRepository.deleteByUser(user);
-//
-//        // 찜 목록 삭제
-//        wishlistRepository.deleteByUser(user);
-//
-//        // 리뷰 삭제
-//         reviewRepository.deleteByUser(user);
     }
 
     // 회원 정보 수정
