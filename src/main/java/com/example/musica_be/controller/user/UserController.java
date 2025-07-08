@@ -1,4 +1,4 @@
-package com.example.musica_be.controller;
+package com.example.musica_be.controller.user;
 
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.Wishlist;
