@@ -59,3 +59,4 @@ public class Classes {
         this.classPrice = classPrice;
     }
 }
+
