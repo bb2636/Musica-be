@@ -11,6 +11,13 @@ public class JwtUtils {
   private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
   private static final long ACCESS_TOKEN_EXPIRATION_TIME = 3600_000;
 
+  // "Bearer {token}" 형식의 JWT 문자열에서 userId(Long)를 추출하는 유틸 메서드
+  public static Long extractUserId(String jwtWithBearer) {
+    String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
+    return Long.parseLong(getUserIdFromToken(token));
+  }
+
+  // 액세스 토큰 생성 (role 추가)
   public static String generateAccessToken(String email, String userId, String role) {
     return Jwts.builder()
             .setSubject(userId)

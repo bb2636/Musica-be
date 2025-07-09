@@ -32,18 +32,18 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return new InMemoryUserDetailsManager(
-                org.springframework.security.core.userdetails.User.withUsername("user")
-                        .password(passwordEncoder().encode("password"))
-                        .roles("USER")
-                        .build(),
-                org.springframework.security.core.userdetails.User.withUsername("admin")
-                        .password(passwordEncoder().encode("admin"))
-                        .roles("ADMIN")
-                        .build(),
-                org.springframework.security.core.userdetails.User.withUsername("instructor")
-                        .password(passwordEncoder().encode("instructorPassword"))
-                        .roles("INSTRUCTOR")
-                        .build()
+            org.springframework.security.core.userdetails.User.withUsername("user")
+                .password(passwordEncoder().encode("password"))
+                .roles("USER")
+                .build(),
+            org.springframework.security.core.userdetails.User.withUsername("admin")
+                .password(passwordEncoder().encode("admin"))
+                .roles("ADMIN")
+                .build(),
+            org.springframework.security.core.userdetails.User.withUsername("instructor")
+                .password(passwordEncoder().encode("instructorPassword"))
+                .roles("INSTRUCTOR")
+                .build()
         );
     }
 

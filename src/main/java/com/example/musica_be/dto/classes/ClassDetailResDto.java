@@ -10,7 +10,7 @@ public class ClassDetailResDto {
     private Long id;
     private String title;
     private String descriptionHtml;
-    private String category;
+    private String categoryName;
     private String difficulty;
     private String thumbnailUrl;
     private Integer classPrice;
@@ -21,7 +21,7 @@ public class ClassDetailResDto {
             .id(classes.getId())
             .title(classes.getTitle())
             .descriptionHtml(classes.getDescriptionHtml())
-            .category(classes.getCategory().getDisplayName())
+            .categoryName(classes.getCategory().getDisplayName())
             .difficulty(classes.getDifficulty().getName())
             .thumbnailUrl(classes.getThumbnailUrl())
             .classPrice(classes.getClassPrice())
