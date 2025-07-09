@@ -1,18 +1,26 @@
 package com.example.musica_be.service.review;
 
 import com.example.musica_be.domain.Review;
+import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.review.ReviewRequestDto;
 import com.example.musica_be.dto.review.ReviewResponseDto;
 import com.example.musica_be.dto.review.UpdateReviewDto;
+import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
@@ -21,13 +29,21 @@ import java.util.stream.Collectors;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private final ClassesRepository classRepository;
+    private final LectureRepository lectureRepository;
+    private final WebClient openAiWebClient; // 주입받음
 
-    // 후기 등록
     @Transactional
     public ReviewResponseDto createReview(User user, ReviewRequestDto dto) {
+        Classes classes = classRepository.findById(dto.getClassId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 없습니다."));
+        Lecture lecture = lectureRepository.findById(dto.getLectureId())
+                .orElseThrow(() -> new IllegalArgumentException("해당 강의가 없습니다."));
+
         Review review = Review.builder()
                 .user(user)
-                .lectureId(dto.getLectureId())
+                .classes(classes)
+                .lecture(lecture)
                 .rating(dto.getRating())
                 .comment(dto.getComment())
                 .createdAt(LocalDateTime.now())
@@ -42,7 +58,6 @@ public class ReviewService {
                 .build();
     }
 
-    // 후기 수정
     @Transactional
     public ReviewResponseDto updateReview(User user, Integer reviewId, UpdateReviewDto dto) {
         Review review = reviewRepository.findByReviewIdAndUser(reviewId, user)
@@ -59,7 +74,6 @@ public class ReviewService {
                 .build();
     }
 
-    // 후기 삭제
     @Transactional
     public ReviewResponseDto deleteReview(User user, Integer reviewId) {
         Review review = reviewRepository.findByReviewIdAndUser(reviewId, user)
@@ -74,16 +88,14 @@ public class ReviewService {
                 .build();
     }
 
-    // 후기 목록 조회 (강의 기준)
     @Transactional(readOnly = true)
-    public List<ReviewResponseDto> getReviewsByLecture(Integer lectureId, Long currentUserId) {
+    public List<ReviewResponseDto> getReviewsByLecture(Long lectureId, Long currentUserId) {
         List<Review> reviews = reviewRepository.findAllByLectureIdWithUser(lectureId);
         return reviews.stream()
                 .map(r -> toDto(r, currentUserId))
                 .collect(Collectors.toList());
     }
 
-    // 후기 단건 조회
     @Transactional(readOnly = true)
     public ReviewResponseDto getReviewById(Integer reviewId, Long currentUserId) {
         Review review = reviewRepository.findByReviewIdWithUser(reviewId)
@@ -91,7 +103,6 @@ public class ReviewService {
         return toDto(review, currentUserId);
     }
 
-    // 내 후기 목록 조회
     @Transactional(readOnly = true)
     public List<ReviewResponseDto> getReviewsByUser(User user) {
         List<Review> reviews = reviewRepository.findAllByUser(user);
@@ -100,14 +111,13 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
-    // DTO 변환 공통 로직
     private ReviewResponseDto toDto(Review r, Long currentUserId) {
         return ReviewResponseDto.builder()
                 .reviewId(r.getReviewId())
                 .name(r.getUser().getName())
                 .rating(r.getRating())
                 .comment(r.getComment())
-                .progress(getProgress(r.getUser().getId(), r.getLectureId()))
+                .progress(getProgress(r.getUser().getId(), r.getLecture().getId()))
                 .isAuthor(currentUserId != null && r.getUser().getId().equals(currentUserId))
                 .createdAt(r.getCreatedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
                 .status("success")
@@ -115,9 +125,54 @@ public class ReviewService {
                 .build();
     }
 
-    // 시청률 (임시로 0 리턴)
-    private int getProgress(Long userId, Integer lectureId) {
+    private int getProgress(Long userId, Long lectureId) {
         // TODO: UserLog 테이블에서 실제 시청률을 조회하도록 변경
         return 0;
     }
+
+    public String getRawCommentsByLecture(Long lectureId) {
+        List<Review> reviews = reviewRepository.findAllByLectureIdWithUser(lectureId);
+        return reviews.stream()
+                .map(Review::getComment)
+                .collect(Collectors.joining("\n"));
+    }
+
+    public String summarizeWithOpenAI(String inputText) {
+
+        Map<String, Object> requestBody = Map.of(
+                "model", "gpt-4o",
+                "messages", List.of(
+                        Map.of("role", "system", "content", "다음 수강후기를 간단하게 요약해줘."),
+                        Map.of("role", "user", "content", inputText)
+                ),
+                "temperature", 0.7
+        );
+
+        return openAiWebClient.post()
+                .uri("/chat/completions")
+                .bodyValue(requestBody)
+                .exchangeToMono(response -> {
+                    return response.bodyToMono(String.class)
+                            .doOnNext(raw -> System.out.println("📥 응답 본문: " + raw))
+                            .map(body -> {
+                                try {
+                                    // JSON 직접 파싱
+                                    var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                                    var map = mapper.readValue(body, Map.class);
+                                    var choices = (List<Map<String, Object>>) map.get("choices");
+                                    if (choices != null && !choices.isEmpty()) {
+                                        var message = (Map<String, Object>) choices.get(0).get("message");
+                                        return (String) message.get("content");
+                                    }
+                                    return "요약 결과 없음";
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    return "요약 처리 중 오류 발생";
+                                }
+                            });
+                })
+                .onErrorReturn("OpenAI API 호출 실패")
+                .block();
+    }
+
 }

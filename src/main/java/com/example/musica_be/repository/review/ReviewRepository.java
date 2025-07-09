@@ -11,8 +11,8 @@ import java.util.Optional;
 
 public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
-    @Query("SELECT r FROM Review r JOIN FETCH r.user u WHERE r.lectureId = :lectureId ORDER BY r.createdAt DESC")
-    List<Review> findAllByLectureIdWithUser(@Param("lectureId") Integer lectureId);
+    @Query("SELECT r FROM Review r JOIN FETCH r.user u WHERE r.lecture.id = :lectureId ORDER BY r.createdAt DESC")
+    List<Review> findAllByLectureIdWithUser(@Param("lectureId") Long lectureId);
 
     @Query("SELECT r FROM Review r JOIN FETCH r.user u WHERE r.reviewId = :reviewId")
     Optional<Review> findByReviewIdWithUser(@Param("reviewId") Integer reviewId);
