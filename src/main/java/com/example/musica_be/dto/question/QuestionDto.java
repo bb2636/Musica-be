@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 public class QuestionDto {
     private Long questionId;
     private Long classId;
+    private Long lectureId;
     private Long userId;
     private String question;
     private LocalDateTime createdAt;
