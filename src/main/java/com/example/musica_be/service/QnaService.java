@@ -38,26 +38,26 @@ public class QnaService {
     private final QnaMapper qnaMapper;
 
     // 질문 등록
-    public CreateQuestionResDto createQuestion(CreateQuestionReqDto request) {
-        User user = userRepository.findById(request.getUserId())
+    public CreateQuestionResDto createQuestion(CreateQuestionReqDto request, Long userId) {
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
         Classes classes = classesRepository.findById(request.getClassId())
                 .orElseThrow(() -> new IllegalArgumentException("클래스 없음"));
 
-        // 예: 해당 클래스에 연결된 Lecture 중 첫 번째를 사용
-        // (실제 요구사항에 따라 강의 ID도 받도록 바꿀 수도 있음)
         List<Lecture> lectures = lectureRepository.findByClasses(classes);
         if (lectures.isEmpty()) {
             throw new IllegalArgumentException("해당 클래스에 등록된 강의 없음");
         }
+
         Lecture lecture = lectures.get(0);
 
-        Question question = new Question();
-        question.setUser(user);
-        question.setLecture(lecture);
-        question.setQuestion(request.getQuestion());
-        question.setStatus(QuestionStatus.IN_PROGRESS);
+        Question question = Question.builder()
+                .user(user)
+                .lecture(lecture)
+                .question(request.getQuestion())
+                .status(QuestionStatus.IN_PROGRESS)
+                .build();
 
         Question saved = questionRepository.save(question);
 

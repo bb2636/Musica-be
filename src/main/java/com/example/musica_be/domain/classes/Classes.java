@@ -27,8 +27,8 @@ public class Classes {
     @Column(name = "description_html")
     private String descriptionHtml;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
     // 난이도는 user 도메인의 Level 엔티티 사용
@@ -59,3 +59,4 @@ public class Classes {
         this.classPrice = classPrice;
     }
 }
+

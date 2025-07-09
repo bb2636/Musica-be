@@ -15,10 +15,9 @@
 //    @GetMapping
 //    public ResponseEntity<?> getToken(
 //        @RequestParam String email,
-//        @RequestParam String userId,
-//        @RequestParam String role
+//        @RequestParam String userId
 //    ) {
-//        String token = JwtUtils.generateAccessToken(email, userId, role);
+//        String token = JwtUtils.generateAccessToken(email, userId);
 //        return ResponseEntity.ok(Map.of("token", token, "message", "JWT 토큰 생성 완료"));
 //    }
 //}
