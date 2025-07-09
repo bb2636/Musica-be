@@ -60,31 +60,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
-                .authorizeHttpRequests()
-                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")  // ADMIN 역할을 가진 사용자만 접근 허용
-                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")  // INSTRUCTOR 역할을 가진 사용자만 접근 허용
-                .anyRequest().authenticated()
-                .and()
-                .oauth2Login()
-                .clientRegistrationRepository(clientRegistrationRepository())
-                .defaultSuccessUrl("/user/home", true)
-                .failureUrl("/api/auth/login?error=true")
-                .and()
-                .addFilterBefore(new JwtFilter(authenticationManager(http)), OAuth2LoginAuthenticationFilter.class);
-
+            .csrf().disable()
+            .authorizeHttpRequests()
+            .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login", "/test-jwt").permitAll()
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
+            .anyRequest().authenticated()
+            .and()
+            .oauth2Login()
+            .clientRegistrationRepository(clientRegistrationRepository())
+            .defaultSuccessUrl("/user/home", true)
+            .failureUrl("/api/auth/login?error=true");
         return http.build();
     }
 
-
+    // 카카오 OAuth2 클라이언트 설정
     @Bean
     public InMemoryClientRegistrationRepository clientRegistrationRepository() {
         if (kakaoConfig.getClientId() == null || kakaoConfig.getClientId().isEmpty()) {
             throw new IllegalStateException("Kakao clientId cannot be empty");
         }
 
-        // 카카오 OAuth2 클라이언트 등록
         ClientRegistration kakaoRegistration = ClientRegistration.withRegistrationId("kakao")
                 .clientId(kakaoConfig.getClientId())
                 .clientSecret(kakaoConfig.getClientSecret())

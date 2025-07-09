@@ -2,16 +2,72 @@ package com.example.musica_be.service.user;
 
 import com.example.musica_be.domain.user.Role;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.util.JwtUtils;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class AdminService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    // 애플리케이션 시작 시 관리자 계정이 없는 경우 미리 생성
+    @PostConstruct
+    public void initAdminUser() {
+        if (!userRepository.existsByEmail("admin@musica.com")) {
+            User adminUser = new User();
+            adminUser.setName("Admin");
+            adminUser.setEmail("admin@musica.com");
+            adminUser.setPassword(passwordEncoder.encode("adminPassword")); // 기본 관리자의 비밀번호
+            adminUser.setRole(Role.ADMIN);  // 관리자로 설정
+            adminUser.setIsApproved(true);  // 승인된 상태로 설정
+            adminUser.setCreatedAt(LocalDateTime.now());
+
+            userRepository.save(adminUser);
+        }
+    }
+    // 관리자 로그인 (관리자만 로그인)
+    public Map<String, String> adminLogin(LoginReqDto loginReqDto) {
+        Optional<User> userOpt = userRepository.findByEmail(loginReqDto.getEmail());
+
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+
+            // 관리자가 아닌 경우 로그인 불가
+            if (user.getRole() != Role.ADMIN) {
+                throw new IllegalArgumentException("Only admin can log in");
+            }
+
+            // 비밀번호 검증
+            if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
+                // 로그인 성공, JWT 토큰 생성
+                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());
+                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());
+
+                // 토큰을 반환
+                Map<String, String> tokens = new HashMap<>();
+                tokens.put("accessToken", accessToken);
+                tokens.put("refreshToken", refreshToken);
+                return tokens;
+            } else {
+                throw new IllegalArgumentException("Invalid password");
+            }
+        } else {
+            throw new IllegalArgumentException("User not found");
+        }
+    }
+
 
     // 강사 목록 조회 (승인 대기 중인 강사들만)
     public List<User> getPendingInstructors() {

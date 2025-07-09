@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @Builder
-public class SearchClassResDto {
+public class ClassSearchResDto {
     private Long id;
     private String title;
     private String thumbnailUrl;
