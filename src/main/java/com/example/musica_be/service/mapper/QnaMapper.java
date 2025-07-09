@@ -12,7 +12,8 @@ public class QnaMapper {
     public QuestionDto toQuestionDto(Question question) {
         return QuestionDto.builder()
                 .questionId(question.getId())
-                .classId(question.getLecture().getId())
+                .classId(question.getLecture().getClasses().getId()) // ✅ Classes ID
+                .lectureId(question.getLecture().getId())             // ✅ Lecture ID
                 .userId(question.getUser().getId())
                 .question(question.getQuestion())
                 .createdAt(question.getCreatedAt())

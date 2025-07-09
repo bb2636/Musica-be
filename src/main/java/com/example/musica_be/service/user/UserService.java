@@ -6,10 +6,12 @@ import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.Role;
 import com.example.musica_be.domain.user.SocialAccount;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.question.QuestionDto;
 import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
 import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.repository.qna.QuestionRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.SocialAccountRepository;
@@ -36,6 +38,7 @@ public class UserService {
     private final SocialAccountRepository socialAccountRepository;
     private final WishlistRepository wishlistRepository;
     private final ReviewRepository reviewRepository;
+    private final QuestionRepository questionRepository;
 
     // 이메일로 사용자 찾기
     public Optional<User> findByEmail(String email) {
@@ -220,9 +223,18 @@ public class UserService {
     public List<Review> getReviews(Long userId) {
         return reviewRepository.findByUserId(userId);
     }
-//
-      // 내가 등록한 질문 목록 조회
-//    public List<Question> getUserQuestions(Long userId) {
-//        return questionRepository.findByUserId(userId);
-//    }
+
+    // 내가 등록한 질문 목록 조회
+    public List<QuestionDto> getUserQuestions(Long userId) {
+        return questionRepository.findByUserId(userId)
+            .stream()
+            .map(question -> QuestionDto.builder()
+                    .questionId(question.getId())
+                    .classId(question.getLecture().getClasses().getId())
+                    .userId(question.getUser().getId())
+                    .question(question.getQuestion())
+                    .createdAt(question.getCreatedAt())
+                    .build())
+            .toList();
+    }
 }
