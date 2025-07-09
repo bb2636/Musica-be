@@ -7,7 +7,8 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class ReviewRequestDto {
-    private Integer lectureId;
+    private Long  classId;
+    private Long  lectureId;
     private Integer rating;
     private String comment;
 }
