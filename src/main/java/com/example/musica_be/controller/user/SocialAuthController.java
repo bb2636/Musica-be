@@ -1,4 +1,4 @@
-package com.example.musica_be.controller;
+package com.example.musica_be.controller.user;
 
 import com.example.musica_be.config.KakaoConfig;
 import com.example.musica_be.domain.user.Role;
@@ -11,9 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
-import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpEntity;
@@ -40,13 +37,13 @@ public class SocialAuthController {
             // 1. 인가 코드로 카카오에 액세스 토큰 요청
             String tokenUri = "https://kauth.kakao.com/oauth/token";
             String body = "grant_type=authorization_code&client_id=" + kakaoConfig.getClientId() +
-                    "&redirect_uri=" + kakaoConfig.getRedirectUri() + "&code=" + code;
+                "&redirect_uri=" + kakaoConfig.getRedirectUri() + "&code=" + code;
 
             ResponseEntity<String> response = restTemplate.exchange(
-                    tokenUri,
-                    HttpMethod.POST,
-                    new HttpEntity<>(body),
-                    String.class
+                tokenUri,
+                HttpMethod.POST,
+                new HttpEntity<>(body),
+                String.class
             );
 
             String accessToken = parseAccessToken(response.getBody());
@@ -57,10 +54,10 @@ public class SocialAuthController {
             headers.setBearerAuth(accessToken);
 
             ResponseEntity<String> userInfoResponse = restTemplate.exchange(
-                    userInfoUri,
-                    HttpMethod.GET,
-                    new HttpEntity<>(headers),
-                    String.class
+                userInfoUri,
+                HttpMethod.GET,
+                new HttpEntity<>(headers),
+                String.class
             );
 
             String email = parseEmail(userInfoResponse.getBody());
@@ -79,9 +76,9 @@ public class SocialAuthController {
             // 5. 소셜 계정 연결
             userService.connectSocialAccount(kakaoId, "kakao", user.get());
 
-            // 6. JWT 생성 및 응답
-            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail(), String.valueOf(user.get().getId()));
-            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail(), String.valueOf(user.get().getId()));
+            // 6. JWT 생성 및 응답 (role을 USER로 설정)
+            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail(), kakaoId, "USER");
+            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail(), kakaoId, "USER");
 
             return ResponseEntity.ok("redirect:/user/signup?email=" + email + "&name=" + name + "&role=USER");
 
@@ -89,6 +86,7 @@ public class SocialAuthController {
             return ResponseEntity.status(400).body("Error during Kakao login");
         }
     }
+
 
     // 회원가입 페이지에서 'role'과 'level'을 선택하고 최종적으로 DB에 저장
     @PostMapping("/user/signup")

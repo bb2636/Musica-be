@@ -1,23 +1,30 @@
 package com.example.musica_be.domain.payment;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.example.musica_be.domain.classes.Classes;
+import jakarta.persistence.*;
 
-import java.sql.Timestamp;
+import java.time.LocalDateTime;
 
 @Entity
 public class Reservation {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  int id;
-  int class_id;
-  int pay_type_id;
-  int status_id;
+  private int id;
 
-  int amount;
-  String payment_method;
-  Timestamp paid_at;
-  Timestamp created_at;
+  @ManyToOne
+  @JoinColumn(name = "class_id", nullable = false)
+  private Classes classes;
+
+  @ManyToOne
+  @JoinColumn(name = "pay_type_id", nullable = false)
+  private ReservationType pay_type_id;
+
+  @ManyToOne
+  @JoinColumn(name = "status_id", nullable = false)
+  private ReservationStatus status_id;
+
+  private int amount;
+  private String payment_method;
+  private LocalDateTime paid_at;
+  private LocalDateTime created_at;
 }

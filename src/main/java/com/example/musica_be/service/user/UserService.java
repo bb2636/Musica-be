@@ -1,16 +1,22 @@
 package com.example.musica_be.service.user;
 
+import com.example.musica_be.domain.Review;
+import com.example.musica_be.domain.Wishlist;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.Role;
 import com.example.musica_be.domain.user.SocialAccount;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.question.QuestionDto;
 import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
 import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.repository.qna.QuestionRepository;
+import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.SocialAccountRepository;
 import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +25,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -29,6 +36,9 @@ public class UserService {
     private final LevelRepository levelRepository;
     private final PasswordEncoder passwordEncoder;
     private final SocialAccountRepository socialAccountRepository;
+    private final WishlistRepository wishlistRepository;
+    private final ReviewRepository reviewRepository;
+    private final QuestionRepository questionRepository;
 
     // 이메일로 사용자 찾기
     public Optional<User> findByEmail(String email) {
@@ -75,7 +85,7 @@ public class UserService {
         Level level = null;
         if ("USER".equalsIgnoreCase(registerReqDto.getRole())) {
             level = levelRepository.findById(registerReqDto.getLevelId())
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
         }
 
         // 비밀번호 암호화
@@ -138,8 +148,8 @@ public class UserService {
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
                 // 로그인 성공, JWT 토큰 생성
-                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()));
-                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()));
+                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
+                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
 
                 return Map.of(
                         "accessToken", accessToken,
@@ -158,7 +168,7 @@ public class UserService {
     public void deleteUser(Long userId) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 사용자가 존재하면 사용자 삭제
         userRepository.delete(user);
@@ -166,10 +176,10 @@ public class UserService {
 
     // 회원 정보 수정
     @Transactional
-    public UserResDto updateUser(Long userId, UpdateUserReqDto updateUserReqDto) {
+    public UserResDto updateUserInfo(Long userId, UpdateUserReqDto updateUserReqDto) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 이메일 중복 체크
         if (!user.getEmail().equals(updateUserReqDto.getEmail()) && userRepository.existsByEmail(updateUserReqDto.getEmail())) {
@@ -187,11 +197,44 @@ public class UserService {
 
         if (updateUserReqDto.getLevelId() != null) {
             Level level = levelRepository.findById(updateUserReqDto.getLevelId())
-                    .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
             user.setLevel(level);
         }
 
         User updatedUser = userRepository.save(user);
         return new UserResDto(updatedUser);
+    }
+      // 수강 중인 강의 목록 조회
+//    public List<Enrollment> getCurrentEnrollments(Long userId) {
+//        return enrollmentRepository.findByUserIdAndStatus(userId, "ENROLLED");
+//    }
+//
+      // 결제 내역 조회
+//    public List<Payment> getPaymentHistory(Long userId) {
+//        return paymentRepository.findByUserId(userId);
+//    }
+
+    // 찜 목록 조회
+    public List<Wishlist> getWishlist(Long userId) {
+        return wishlistRepository.findByUserId(userId);
+    }
+
+      // 후기 목록 조회
+    public List<Review> getReviews(Long userId) {
+        return reviewRepository.findByUserId(userId);
+    }
+
+    // 내가 등록한 질문 목록 조회
+    public List<QuestionDto> getUserQuestions(Long userId) {
+        return questionRepository.findByUserId(userId)
+            .stream()
+            .map(question -> QuestionDto.builder()
+                    .questionId(question.getId())
+                    .classId(question.getLecture().getClasses().getId())
+                    .userId(question.getUser().getId())
+                    .question(question.getQuestion())
+                    .createdAt(question.getCreatedAt())
+                    .build())
+            .toList();
     }
 }

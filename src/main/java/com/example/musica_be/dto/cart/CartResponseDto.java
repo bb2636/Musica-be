@@ -5,7 +5,8 @@ import lombok.Data;
 
 @Data
 @Builder
-public class CartSuccessDto {
+public class CartResponseDto {
   String status;
   String message;
+  CartItemIdsDto items;
 }
