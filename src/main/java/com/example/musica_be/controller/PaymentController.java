@@ -1,4 +1,4 @@
-package com.example.musica_be.controller.user;
+package com.example.musica_be.controller;
 
 import com.example.musica_be.dto.payment.*;
 import com.example.musica_be.service.payment.PaymentService;
@@ -15,13 +15,13 @@ public class PaymentController {
 
   private final PaymentService paymentService;
 
-  // 수강 중인 클래스 조회
-  @GetMapping("/enrolled-classes")
-  public ResponseEntity<List<EnrolledClassDto>> getEnrolledClasses(
-      @RequestHeader("Authorization") String jwt) {
-    List<EnrolledClassDto> enrolledClasses = paymentService.getEnrolledClasses(jwt);
-    return ResponseEntity.ok(enrolledClasses);
-  }
+//  // 수강 중인 클래스 조회
+//  @GetMapping("/enrolled-classes")
+//  public ResponseEntity<List<EnrolledClassDto>> getEnrolledClasses(
+//      @RequestHeader("Authorization") String jwt) {
+//    List<EnrolledClassDto> enrolledClasses = paymentService.getEnrolledClasses(jwt);
+//    return ResponseEntity.ok(enrolledClasses);
+//  }
 
   // 결제 요약 리스트 조회
   @GetMapping("/summaries")
@@ -41,7 +41,7 @@ public class PaymentController {
 
   // 결제 완료
   @PostMapping("/complete")
-  public ResponseEntity<PaymentResponseDto> completePayment(
+  public ResponseEntity<PaymentResponseDto> completePayment (
       @RequestHeader("Authorization") String jwt) {
     PaymentResponseDto response = paymentService.completePayment(jwt);
     return ResponseEntity.ok(response);

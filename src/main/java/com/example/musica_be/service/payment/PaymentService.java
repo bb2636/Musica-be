@@ -3,6 +3,7 @@ package com.example.musica_be.service.payment;
 import com.example.musica_be.domain.cart.Cart;
 import com.example.musica_be.domain.cart.CartItem;
 import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.payment.Payment;
 import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.domain.payment.PaymentStatus;
@@ -30,11 +31,41 @@ public class PaymentService {
   private final CartItemRepository cartItemRepository;
   private final PaymentStatusRepository paymentStatusRepository;
 
-  @Transactional
-  public List<EnrolledClassDto> getEnrolledClasses(String jwt) {
-    Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
-    return paymentItemRepository.findEnrolledClassesByUserId(userId);
-  }
+//  수강 중인 강의
+//  public List<EnrolledClassDto> getEnrolledClassesWithProgress(Long userId) {
+//    List<PaymentItem> paymentItems = paymentItemRepository.findAllByPaymentUserId(userId);
+//    List<EnrolledClassDto> dtos = new ArrayList<>();
+//
+//    for (PaymentItem pi : paymentItems) {
+//      var payment = pi.getPayment();
+//      var clazz = pi.getPayment().getClasses();
+//      var instructor = clazz.getInstructor();
+//
+//      List<Lecture> lectures = clazz.getLectures();
+//      int avgProgress = 0;
+//      if (!lectures.isEmpty()) {
+//        avgProgress = (int) lectures.stream()
+//                .mapToInt(Lecture::getProgress)
+//                .average()
+//                .orElse(0);
+//      }
+//
+//      EnrolledClassDto dto = new EnrolledClassDto(
+//              payment.getId(),
+//              clazz.getId(),
+//              clazz.getTitle(),
+//              clazz.getThumbnailUrl(),
+//              instructor.getName(),
+//              pi.getAmount(),
+//              avgProgress,
+//              payment.getPaidAt()
+//      );
+//
+//      dtos.add(dto);
+//    }
+//
+//    return dtos;
+//  }
 
   @Transactional
   public List<PaymentSummaryDto> getPaymentSummaries(String jwt) {
