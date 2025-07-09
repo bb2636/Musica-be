@@ -62,20 +62,15 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeHttpRequests()
-                .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login").permitAll()  // 일반 로그인은 모두 허용
-                .requestMatchers("/admin/**").hasRole("ADMIN")  // ADMIN 역할을 가진 사용자만 접근 허용
-                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")  // INSTRUCTOR 역할을 가진 사용자만 접근 허용
+                .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login").permitAll()
+                .requestMatchers("/admin/**").hasRole("ADMIN")
+                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
                 .anyRequest().authenticated()
                 .and()
-                .formLogin()  // 기본 로그인 설정
-                .loginPage("/api/auth/login")  // 기본 로그인 페이지 경로
-                .permitAll()
-                .and()
-                .oauth2Login()  // 카카오 로그인 설정
+                .oauth2Login()
                 .clientRegistrationRepository(clientRegistrationRepository())
                 .defaultSuccessUrl("/user/home", true)
                 .failureUrl("/api/auth/login?error=true");
-
         return http.build();
     }
 

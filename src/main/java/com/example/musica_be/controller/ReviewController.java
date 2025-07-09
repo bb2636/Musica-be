@@ -5,7 +5,7 @@ import com.example.musica_be.dto.review.ReviewRequestDto;
 import com.example.musica_be.dto.review.ReviewResponseDto;
 import com.example.musica_be.dto.review.UpdateReviewDto;
 import com.example.musica_be.repository.user.UserRepository;
-import com.example.musica_be.service.ReviewService;
+import com.example.musica_be.service.review.ReviewService;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
