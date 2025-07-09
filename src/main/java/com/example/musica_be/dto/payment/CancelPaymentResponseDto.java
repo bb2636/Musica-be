@@ -1,6 +1,11 @@
 package com.example.musica_be.dto.payment;
 
-public class PaymentCancelableResponseDto {
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+public class CancelPaymentResponseDto {
   private String status;
   private String message;
   private boolean is_cancelable;

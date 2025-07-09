@@ -1,5 +1,6 @@
 package com.example.musica_be.repository.cart;
 
+import com.example.musica_be.domain.cart.Cart;
 import com.example.musica_be.domain.cart.CartItem;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,4 +19,6 @@ public interface CartItemRepository extends JpaRepository<CartItem, Long> {
 
   @Query("SELECT ci FROM CartItem ci JOIN FETCH ci.classes WHERE ci.cart.id = :cartId")
   List<CartItem> findAllByCartIdWithClasses(@Param("cartId") Long cartId);
+
+  List<CartItem> findByCart(Cart cart);
 }
