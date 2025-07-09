@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class CreateClassResDto {
+public class ClassUpdateResDto {
     private Long classId;
-    private String message;  // ex) "클래스 등록 완료"
+    private String message; // "수정 완료" 등
 }

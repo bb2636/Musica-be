@@ -62,7 +62,7 @@ public class SecurityConfig {
         http
                 .csrf().disable()  // CSRF 비활성화
                 .authorizeHttpRequests()  // authorizeRequests()에서 authorizeHttpRequests()로 변경
-                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**").permitAll()  // 로그인 관련 경로 허용
+                .requestMatchers("/api/users/register", "/api/auth/login", "/login/**", "/oauth2/authorization/**", "/test-jwt").permitAll()  // 로그인 관련 경로 허용
                 .anyRequest().authenticated()  // 나머지 경로는 인증된 사용자만 접근 허용
                 .and()
                 .oauth2Login()  // oauth2Login()은 Spring Security 6.x에서 여전히 사용 가능

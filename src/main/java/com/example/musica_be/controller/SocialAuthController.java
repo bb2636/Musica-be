@@ -80,8 +80,8 @@ public class SocialAuthController {
             userService.connectSocialAccount(kakaoId, "kakao", user.get());
 
             // 6. JWT 생성 및 응답
-            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail());
-            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail());
+            String accessTokenJwt = JwtUtils.generateAccessToken(user.get().getEmail(), String.valueOf(user.get().getId()));
+            String refreshToken = JwtUtils.generateRefreshToken(user.get().getEmail(), String.valueOf(user.get().getId()));
 
             return ResponseEntity.ok("redirect:/user/signup?email=" + email + "&name=" + name + "&role=USER");
 
