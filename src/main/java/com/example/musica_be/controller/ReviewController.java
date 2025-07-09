@@ -127,23 +127,6 @@ public class ReviewController {
     }
 
     // 5. 특정 강의의 후기 요약 (AI 활용)
-    @GetMapping("/lecture/{lecture}/summary")
-    public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
-            String rawComments = reviewService.getRawCommentsByLecture(lectureId);
-            String summary = reviewService.summarizeWithOpenAI(rawComments);
-
-            return ResponseEntity.ok(Map.of("lectureId", lectureId.toString(),
-                    "summary", summary));
-    }
-
-    // 6. 인증 실패 대응 ( JWT 파싱 실패시 )
-    @ResponseStatus(HttpStatus.UNAUTHORIZED)
-    @ExceptionHandler(IllegalArgumentException.class)
-    public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
-            return Map.of("error", ex.getMessage());
-    }
-
-    // 특정 강의의 후기 요약
     @GetMapping("/lecture/{lectureId}/summary")
     public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
         // 1. 강의에 대한 raw 댓글 모음
@@ -159,6 +142,7 @@ public class ReviewController {
         ));
     }
 
+    // 6. 인증 실패 대응 ( JWT 파싱 실패시 )
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(IllegalArgumentException.class)
     public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
