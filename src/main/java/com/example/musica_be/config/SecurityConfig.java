@@ -60,17 +60,17 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf().disable()
-                .authorizeHttpRequests()
-                .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login").permitAll()
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
-                .anyRequest().authenticated()
-                .and()
-                .oauth2Login()
-                .clientRegistrationRepository(clientRegistrationRepository())
-                .defaultSuccessUrl("/user/home", true)
-                .failureUrl("/api/auth/login?error=true");
+            .csrf().disable()
+            .authorizeHttpRequests()
+            .requestMatchers("/api/users/register", "/api/auth/login", "/api/admin/login", "/test-jwt").permitAll()
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
+            .anyRequest().authenticated()
+            .and()
+            .oauth2Login()
+            .clientRegistrationRepository(clientRegistrationRepository())
+            .defaultSuccessUrl("/user/home", true)
+            .failureUrl("/api/auth/login?error=true");
         return http.build();
     }
 
@@ -96,4 +96,3 @@ public class SecurityConfig {
         return new InMemoryClientRegistrationRepository(kakaoRegistration);  // 카카오 등록 정보를 InMemory 저장소에 등록
     }
 }
-
