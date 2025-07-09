@@ -5,7 +5,7 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class UpdateClassResDto {
+public class ClassDeleteResDto {
     private Long classId;
-    private String message; // "수정 완료" 등
+    private String message;  // 예: "클래스가 삭제되었습니다."
 }
