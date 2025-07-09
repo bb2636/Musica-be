@@ -9,7 +9,6 @@ import com.example.musica_be.service.review.ReviewService;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,9 +24,8 @@ public class ReviewController {
     private final ReviewService reviewService;
     private final UserRepository userRepository;
 
-    private User getUser(String authHeader) {
-        Long userId = JwtUtils.extractUserId(authHeader);
-
+    private User getUser(String jwt) {
+        Long userId = JwtUtils.extractUserId(jwt);
         return userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("유저 정보를 찾을 수 없습니다."));
     }
@@ -145,4 +143,25 @@ public class ReviewController {
             return Map.of("error", ex.getMessage());
     }
 
+    // 특정 강의의 후기 요약
+    @GetMapping("/lecture/{lectureId}/summary")
+    public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
+        // 1. 강의에 대한 raw 댓글 모음
+        String rawComments = reviewService.getRawCommentsByLecture(lectureId);
+
+        // 2. OpenAI를 통해 요약
+        String summary = reviewService.summarizeWithOpenAI(rawComments);
+
+        // 3. JSON 형태로 반환
+        return ResponseEntity.ok(Map.of(
+                "lectureId", lectureId.toString(),
+                "summary", summary
+        ));
+    }
+
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler(IllegalArgumentException.class)
+    public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
+        return Map.of("error", ex.getMessage());
+    }
 }

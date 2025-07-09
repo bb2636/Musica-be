@@ -1,5 +1,6 @@
 package com.example.musica_be.domain;
 
+import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
@@ -24,6 +25,10 @@ public class Review {
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", nullable = false)
+    private Classes classes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "lecture_id", nullable = false)
     private Lecture lecture;
 
@@ -35,6 +40,7 @@ public class Review {
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
 
     // 수정 가능 필드만 setter 열기
     public void update(String comment, Integer rating) {

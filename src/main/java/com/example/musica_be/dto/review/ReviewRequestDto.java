@@ -13,6 +13,8 @@ import lombok.*;
 public class ReviewRequestDto {
     @NotNull(message = "강의 ID는 필수입니다.")
     private Long lectureId;
+    @NotNull(message = "클래스 ID는 필수입니다.")
+    private Long  classId;
 
     @NotNull(message = "평점은 필수입니다.")
     @Min(value = 1, message = "평점은 최소 1점 이상이어야 합니다.")
