@@ -1,46 +1,33 @@
 package com.example.musica_be.domain.classes;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
-public enum Category {
-    Piano("피아노"),
-    Guitar("기타"),
-    Drums("드럼"),
-    Violin("바이올린"),
-    Viola("비올라"),
-    Cello("첼로"),
-    DoubleBass("더블베이스"),
-    Flute("플루트"),
-    Clarinet("클라리넷"),
-    Oboe("오보에"),
-    Bassoon("바순"),
-    Trumpet("트럼펫"),
-    Trombone("트럼본"),
-    Harp("하프"),
-    Ukulele("우쿨렐레"),
-    ElectricGuitar("일렉기타"),
-    AcousticGuitar("통기타"),
-    Keyboard("전자 키보드"),
-    Xylophone("실로폰"),
-    Saxophone("색소폰"),
-    Harmonica("하모니카"),
-    Recorder("리코더"),
-    Melodica("멜로디카"),
-    Vocal("보컬"),
-    Composition("작곡"),
-    Beatbox("비트박스"),
-    Mixing("믹싱"),
-    Mastering("마스터링"),
-    MusicTheory("화성학");
+@Entity
+@Getter
+@NoArgsConstructor
+@AllArgsConstructor
+public class Category {
 
-    private final String displayName;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    Category(String displayName) {
-        this.displayName = displayName;
-    }
+    // 카테고리 코드 (예: PIANO, GUITAR)
+    @Column(nullable = false, unique = true)
+    private String code;
 
-    @JsonValue
-    public String getDisplayName() {
-        return displayName;
-    }
+    // 사용자에게 보여질 이름 (예: 피아노, 기타)
+    @Column(nullable = false)
+    private String displayName;
+
+    // 정렬 순서
+    @Column(nullable = false)
+    private int displayOrder;
+
+    // 노출 여부 (관리자가 숨기거나 할 때 사용)
+    @Column(nullable = false)
+    private boolean isActive;
 }
