@@ -8,7 +8,7 @@ import java.time.LocalDate;
 @Data
 @Builder
 public class EnrolledClassListDto {
-  private Long reservation_id;
+  private Long payment_id;
   private Long class_id;
   private String title;
   private String thumbnailUrl;

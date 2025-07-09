@@ -5,7 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class PaymentItemDto {
+public class  PaymentItemDto {
     private Long class_id;
     private String title;
     private String thumbnailUrl;

@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-public class Reservation {
+public class Payment {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private int id;
@@ -17,11 +17,11 @@ public class Reservation {
 
   @ManyToOne
   @JoinColumn(name = "pay_type_id", nullable = false)
-  private ReservationType pay_type_id;
+  private PaymentType pay_type_id;
 
   @ManyToOne
   @JoinColumn(name = "status_id", nullable = false)
-  private ReservationStatus status_id;
+  private PaymentStatus status_id;
 
   private int amount;
   private String payment_method;

@@ -6,7 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 @Entity
-public class ReservationStatus {
+public class PaymentStatus {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     private int id;

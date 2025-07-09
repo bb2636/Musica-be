@@ -1,9 +1,6 @@
 package com.example.musica_be.dto.payment;
 
-import java.sql.Timestamp;
-
-public class paymentResponseDto {
+public class PaymentResponseDto {
   private String status;
   private String message;
-
 }
