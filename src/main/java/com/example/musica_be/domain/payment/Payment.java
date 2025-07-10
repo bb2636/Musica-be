@@ -1,6 +1,5 @@
 package com.example.musica_be.domain.payment;
 
-import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -19,16 +18,12 @@ public class Payment {
   private User user;
 
   @ManyToOne
-  @JoinColumn(name = "class_id", nullable = false)
-  private Classes classes;
-
-  @ManyToOne
   @JoinColumn(name = "pay_type_id", nullable = false)
-  private PaymentType pay_type_id;
+  private PaymentType payType;
 
   @ManyToOne
   @JoinColumn(name = "status_id", nullable = false)
-  private PaymentStatus status_id;
+  private PaymentStatus status;
 
   private int amount;
   private String payment_method;

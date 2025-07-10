@@ -1,6 +1,5 @@
 package com.example.musica_be.dto.payment;
 
-import lombok.Builder;
 import lombok.Data;
 
 import java.time.LocalDateTime;

@@ -21,4 +21,8 @@ public class LectureViewLog {
   Lecture lecture;
   LocalDate watched_at;
   LocalTime duration_seconds;
+
+  public int getDurationSeconds() {
+    return duration_seconds != null ? duration_seconds.toSecondOfDay() : 0;
+  }
 }
