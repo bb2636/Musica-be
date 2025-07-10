@@ -19,5 +19,10 @@ public class PaymentItem {
   @JoinColumn(name = "classes_id", nullable = false)
   private Classes classes;
 
+  @ManyToOne
+  @JoinColumn(name = "paymentStatus_id", nullable = false)
+  private PaymentStatus paymentStatus;
+
+  private int amount;
   private int quantity;
 }

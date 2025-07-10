@@ -21,6 +21,7 @@ public class CartItem {
   @JoinColumn(name = "class_id", nullable = false)
   private Classes classes;
 
-  private Long quantity;
+  private int quantity;
+  private int amount;
   private LocalDateTime added_at;
 }
