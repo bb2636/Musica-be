@@ -71,6 +71,16 @@ public class CartService {
     Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     Cart cart = cartRepository.findByUserId(userId);
 
+    //카트가 없을 경우 유저의 카트 추가
+    if (cart == null) {
+      User user = userRepository.findById(userId)
+          .orElseThrow(() -> new RuntimeException("User not found"));
+      cart = new Cart();
+      cart.setUser(user);
+      cart.setCreated_at(LocalDateTime.now());
+      cartRepository.save(cart);
+    }
+
     // 클래스가 이미 장바구니에 담겼는지 체크
     boolean exists = cartItemRepository.existsByCartIdAndClassesId(cart.getId(), classId);
     if (exists) {

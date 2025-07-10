@@ -33,6 +33,7 @@ public class JwtFilter extends OncePerRequestFilter {
         if (token != null && token.startsWith("Bearer ")) {
             try {
                 // JWT 토큰에서 이메일 추출
+                System.out.println("test "+token.substring(7));
                 String email = JwtUtils.getEmailFromToken(token.substring(7));  // 'Bearer ' 제거
                 if (email != null) {
                     // 인증 객체 생성

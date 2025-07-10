@@ -9,7 +9,6 @@ import com.example.musica_be.dto.question.QuestionDto;
 import com.example.musica_be.dto.question.UpdateQuestionReqDto;
 import com.example.musica_be.service.QnaService;
 import com.example.musica_be.util.JwtUtils;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,20 +24,19 @@ public class QnaController {
     // 질문 등록
     @PostMapping("/questions")
     public ResponseEntity<CreateQuestionResDto> createQuestion(
-            @RequestBody CreateQuestionReqDto request,
-            @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
-        Long userId = Long.parseLong(JwtUtils.getUserIdFromToken(token));
+            @RequestHeader("Authorization") String jwt,
+            @RequestBody CreateQuestionReqDto request) {
+        Long userId = JwtUtils.extractUserId(jwt);
         return ResponseEntity.ok(qnaService.createQuestion(request, userId));
     }
 
     // 질문 수정
     @PutMapping("/questions/{questionId}")
     public ResponseEntity<Void> updateQuestion(
+            @RequestHeader("Authorization") String jwt,
             @PathVariable Long questionId,
-            @RequestBody UpdateQuestionReqDto request,
-            HttpServletRequest servletRequest) throws Exception {
-        Long userId = Long.parseLong(JwtUtils.getUserIdFromToken(extractToken(servletRequest)));
+            @RequestBody UpdateQuestionReqDto request) throws Exception {
+        Long userId = JwtUtils.extractUserId(jwt);
         qnaService.updateQuestion(questionId, request, userId);
         return ResponseEntity.ok().build();
     }
@@ -46,9 +44,9 @@ public class QnaController {
     // 질문 삭제
     @DeleteMapping("/questions/{questionId}")
     public ResponseEntity<Void> deleteQuestion(
-            @PathVariable Long questionId,
-            HttpServletRequest servletRequest) throws Exception {
-        Long userId = Long.parseLong(JwtUtils.getUserIdFromToken(extractToken(servletRequest)));
+            @RequestHeader("Authorization") String jwt,
+            @PathVariable Long questionId) throws Exception {
+        Long userId = JwtUtils.extractUserId(jwt);
         qnaService.deleteQuestion(questionId, userId);
         return ResponseEntity.ok().build();
     }
@@ -63,9 +61,9 @@ public class QnaController {
     // 답변 등록 (강사만)
     @PostMapping("/answers")
     public ResponseEntity<CreateAnswerResDto> createAnswer(
-            @RequestBody CreateAnswerReqDto request,
-            HttpServletRequest servletRequest) throws Exception {
-        Long userId = Long.parseLong(JwtUtils.getUserIdFromToken(extractToken(servletRequest)));
+            @RequestHeader("Authorization") String jwt,
+            @RequestBody CreateAnswerReqDto request) throws Exception {
+        Long userId = JwtUtils.extractUserId(jwt);
         request.setUserId(userId);
         return ResponseEntity.ok(qnaService.createAnswer(request));
     }
@@ -75,14 +73,5 @@ public class QnaController {
     public ResponseEntity<List<InstructorAnswerDto>> getInstructorAnswers(
             @PathVariable Long instructorId) {
         return ResponseEntity.ok(qnaService.getInstructorAnswers(instructorId));
-    }
-
-    // 토큰 추출 유틸
-    private String extractToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader("Authorization");
-        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
-        }
-        throw new IllegalArgumentException("토큰이 없습니다");
     }
 }

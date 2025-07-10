@@ -10,7 +10,7 @@ import lombok.Data;
 @Entity
 public class PaymentStatus {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
 }

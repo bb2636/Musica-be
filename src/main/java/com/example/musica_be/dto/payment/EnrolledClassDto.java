@@ -6,7 +6,6 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 @Data
-@Builder
 public class EnrolledClassDto {
   private Long payment_id;
   private Long class_id;
@@ -14,8 +13,9 @@ public class EnrolledClassDto {
   private String thumbnailUrl;
   private String instructorName;
   private int amount;
-  private int progress;
   private LocalDateTime paid_at;
+  private int progress;
+
 
   public EnrolledClassDto(Long payment_id, Long class_id, String title, String thumbnailUrl, String instructorName, int amount,int progress, LocalDateTime paid_at) {
     this.payment_id = payment_id;
