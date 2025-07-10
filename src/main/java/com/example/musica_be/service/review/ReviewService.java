@@ -11,6 +11,7 @@ import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,6 +30,8 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ClassesRepository classRepository;
     private final LectureRepository lectureRepository;
+
+    @Qualifier("openAiWebClient")
     private final WebClient openAiWebClient; // 주입받음
 
     // 후기 등록

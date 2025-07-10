@@ -12,9 +12,13 @@ public class Payment {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
+  @Column(nullable = false, unique = true)
+  private String orderId;
+  @Column(nullable = false, unique = true)
+  private String paymentKey;
 
   @ManyToOne
-  @JoinColumn(name= "user_id", nullable = false)
+  @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
   @ManyToOne
