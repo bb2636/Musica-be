@@ -1,8 +1,12 @@
 package com.example.musica_be.controller.user;
 
+import com.example.musica_be.domain.classes.Category;
+import com.example.musica_be.dto.category.CategoryReqDto;
 import com.example.musica_be.dto.user.LoginReqDto;
+import com.example.musica_be.service.category.CategoryService;
 import com.example.musica_be.service.user.AdminService;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +21,7 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final CategoryService categoryService;
 
     // 승인 대기 중인 강사 목록 조회
     @PreAuthorize("hasRole('ADMIN')")
@@ -58,6 +63,32 @@ public class AdminController {
             return ResponseEntity.ok(tokens); // JSON 형태로 반환
         } catch (Exception e) {
             return ResponseEntity.status(400).body(Map.of("message", e.getMessage())); // 실패 시 에러 메시지 반환
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/categories")
+    public ResponseEntity<?> createCategory(@RequestBody CategoryReqDto dto) {
+        try {
+            Category saved = categoryService.createCategory(dto);
+            return ResponseEntity.ok(saved);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body("서버 에러 발생: " + e.getMessage());
+        }
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PutMapping("/categories/{id}")
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryReqDto dto) {
+        try {
+            Category updated = categoryService.updateCategory(id, dto);
+            return ResponseEntity.ok(updated); // 수정된 카테고리 반환
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage())); // 유효성 실패 등
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("message", "서버 에러 발생: " + e.getMessage())); // 예외 대응
         }
     }
 }
