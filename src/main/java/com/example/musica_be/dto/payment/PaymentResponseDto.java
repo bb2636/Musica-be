@@ -1,9 +1,11 @@
 package com.example.musica_be.dto.payment;
 
-import java.sql.Timestamp;
+import lombok.Builder;
+import lombok.Data;
 
-public class paymentResponseDto {
+@Data
+@Builder
+public class PaymentResponseDto {
   private String status;
   private String message;
-
 }
