@@ -106,8 +106,8 @@ public class DevTestController {
         Lecture lecture = Lecture.builder()
                 .title("테스트 강의")
                 .videoUrl("https://youtube.com/video")
-                .videoObjectKey("lectures/sample/dummy.mp4")
-                .sheetMusicUrl("https://sheet.com/music.pdf")
+                .fileObjectKey("lectures/sample/dummy.mp4")
+                .fileUrl("https://sheet.com/music.pdf")
                 .lectureOrder(1)
                 .classes(classes)
                 .build();

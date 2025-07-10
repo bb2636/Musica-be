@@ -13,8 +13,13 @@ public class JwtUtils {
 
   // "Bearer {token}" 형식의 JWT 문자열에서 userId(Long)를 추출하는 유틸 메서드
   public static Long extractUserId(String jwtWithBearer) {
-    String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
-    return Long.parseLong(getUserIdFromToken(token));
+    try {
+      String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
+      return Long.parseLong(getUserIdFromToken(token));
+    } catch (Exception e) {
+      System.out.println("JWT에서 userId 파싱 실패: " + e.getMessage());
+      throw new RuntimeException("JWT parsing failed", e);
+    }
   }
 
   // 액세스 토큰 생성 (role 추가)

@@ -68,9 +68,7 @@ public class ClassesService {
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스가 존재하지 않습니다."));
         // 유저 권한 확인
-        if (!classes.getInstructor().getId().equals(userId)) {
-            throw new SecurityException("수정 권한이 없습니다.");
-        }
+        validateInstructor(classes, userId);
         // 존재하는 난이도인지 확인
         Level difficulty = levelRepository.findById(dto.getDifficultyId())
             .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 난이도 ID입니다."));
@@ -98,9 +96,7 @@ public class ClassesService {
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스가 존재하지 않습니다."));
         // 유저 권한 확인
-        if (!classes.getInstructor().getId().equals(userId)) {
-            throw new SecurityException("삭제 권한이 없습니다.");
-        }
+        validateInstructor(classes, userId);
 
         classesRepository.delete(classes);
     }
@@ -124,5 +120,12 @@ public class ClassesService {
                 return ClassSummaryDto.from(classes, lectureCount);
             })
             .toList();
+    }
+
+    // ====== 헬퍼 메서드 ======
+    private void validateInstructor(Classes classes, Long userId) {
+        if (!classes.getInstructor().getId().equals(userId)) {
+            throw new SecurityException("권한이 없습니다.");
+        }
     }
 }

@@ -10,7 +10,7 @@ public class LectureDetailResDto {
     private Long id;
     private String title;
     private String videoUrl;
-    private String sheetMusicUrl;
+    private String fileUrl;
     private Integer lectureOrder;
 
     public static LectureDetailResDto from(Lecture lecture) {
@@ -18,7 +18,7 @@ public class LectureDetailResDto {
             .id(lecture.getId())
             .title(lecture.getTitle())
             .videoUrl(lecture.getVideoUrl())
-            .sheetMusicUrl(lecture.getSheetMusicUrl())
+            .fileUrl(lecture.getFileUrl())
             .lectureOrder(lecture.getLectureOrder())
             .build();
     }

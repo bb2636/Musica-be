@@ -25,38 +25,46 @@ public class Lecture {
     @Column(nullable = false)
     private String title;
 
-    // 사용자가 실제 재생할 URL
-    @Column(nullable = false)
+    // s3 에 저장된 강의 영상의 객체 url
+    // aws 권한이 없으면 접근 불가 (403)
+    @Column(nullable = true)
     private String videoUrl;
 
-    private Integer progress;
+    // s3 에 저장된 영상 외 강의 자료의 객체 url
+    // aws 권한이 없으면 접근 불가 (403)
+    @Column(nullable = true)
+    private String fileUrl;
 
-    private String sheetMusicUrl;
+    // Presigned GET URL 생성에 사용됨
+    // 여기서 https://버킷명.s3.amazonaws.com/ 다음의 경로가 videoObjectKey
+    @Column(nullable = true)
+    private String videoObjectKey; // 예: "lectures/123/강의1.mp4"
 
-    // S3 내부에서 Presigned URL 만들 때 사용하는 경로
-    @Column(nullable = false)
-    private String videoObjectKey;  // 예: "lectures/123/강의1.mp4"
+    // Presigned GET URL 생성에 사용됨
+    @Column(nullable = true)
+    private String fileObjectKey; // 예: "lectures/123/강의자료1.pdf"
 
+    // 강의 순서
     @Column(nullable = false)
     private Integer lectureOrder;
+
+    // 강의 길이 (초 단위 저장, 프론트에서 분:초 변환)
+    @Column(nullable = true)
+    private Integer duration;
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
     // Lecture.java
-    public void update(String title, String videoUrl, String sheetMusicUrl, int lectureOrder) {
+    public void update(String title, String videoUrl, String fileUrl, int lectureOrder) {
         this.title = title;
         this.videoUrl = videoUrl;
-        this.sheetMusicUrl = sheetMusicUrl;
+        this.fileUrl = fileUrl;
         this.lectureOrder = lectureOrder;
     }
 
     public void changeOrder(int newOrder) {
         this.lectureOrder = newOrder;
-    }
-
-    public void updateProgress(Integer progress) {
-        this.progress = progress;
     }
 }
