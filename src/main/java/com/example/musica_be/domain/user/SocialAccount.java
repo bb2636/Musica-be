@@ -16,10 +16,10 @@ public class SocialAccount {
     private Long id;
 
     @Column(nullable = false)
-    private String socialId;  // 카카오 ID, 구글 ID 등
+    private String socialId;  // 카카오 ID
 
     @Column(nullable = false)
-    private String provider;  // 소셜 로그인 제공자 (예: "kakao", "google")
+    private String provider;  // 소셜 로그인 제공자 (예: "kakao")
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
