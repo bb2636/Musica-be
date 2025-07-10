@@ -43,16 +43,18 @@ public class PaymentController {
   public ResponseEntity<CancelPaymentResponseDto> cancelPayment(
       @RequestHeader("Authorization") String jwt,
       @RequestBody CancelPaymentRequestDto request) {
-    CancelPaymentResponseDto result = paymentService.cancelEnrolledClasses(jwt, request);
+    CancelPaymentResponseDto result = paymentService.tossCancelPayment(request, jwt);
     return ResponseEntity.ok(result);
   }
 
   // 결제 완료 처리 (장바구니 결제)
   @PostMapping("/payment/cart/checkout")
   public ResponseEntity<PaymentResponseDto> completePayment(
-      @RequestHeader("Authorization") String jwt,
-      @RequestBody PaymentStatusUpdateRequestDto request) {
-    PaymentResponseDto response = paymentService.completePayment(jwt, request);
+      @RequestParam("paymentKey") String paymentKey,
+      @RequestParam("orderId")String orderId,
+      @RequestParam("amount")int amount,
+      @RequestParam("cartId") Long cartId) {
+    PaymentResponseDto response = paymentService.tossCompletePayment(paymentKey,orderId,amount,cartId);
     return ResponseEntity.ok(response);
   }
 }
