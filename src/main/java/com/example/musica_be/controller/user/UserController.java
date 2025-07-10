@@ -37,6 +37,13 @@ public class UserController {
             return ResponseEntity.badRequest().body(new UserResDto(e.getMessage()));
         }
     }
+    //회원가입 - 이메일 중복확인
+    //ex) {{domain}}/api/users/check-email?email=test@test.com
+    @GetMapping("/users/check-email")
+    public ResponseEntity<Boolean> checkEmailDuplicate(@RequestParam String email) {
+        boolean exists = userService.isEmailDuplicate(email);
+        return ResponseEntity.ok(exists); // true면 중복
+    }
 
     // 일반 로그인 (사용자, 강사 로그인)
     @PostMapping("/auth/login")

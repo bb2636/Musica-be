@@ -24,7 +24,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,14 +49,17 @@ public class UserService {
         return userRepository.save(user);
     }
 
+    // 기존 registerUser() 내부에 있던 중복 검사 분리
+    public boolean isEmailDuplicate(String email) {
+        return userRepository.existsByEmail(email);
+    }
+
     // 소셜 계정 연결
     @Transactional
     public void connectSocialAccount(String socialId, String provider, User user) {
         // 소셜 계정이 이미 연결된 경우 확인
         Optional<SocialAccount> existingAccount = socialAccountRepository.findBySocialIdAndProvider(socialId, provider);
-        if (existingAccount.isPresent()) {
-            return; // 이미 연결된 소셜 계정이 있으면 추가로 처리하지 않음
-        }
+        if (existingAccount.isPresent()) return; // 이미 연결된 소셜 계정이 있으면 추가로 처리하지 않음
 
         // 새로운 소셜 계정 연결
         SocialAccount socialAccount = SocialAccount.builder()
@@ -73,7 +75,7 @@ public class UserService {
     // 기존 사용자 등록
     public UserResDto registerUser(RegisterReqDto registerReqDto) {
         // 이메일 중복 체크
-        if (userRepository.existsByEmail(registerReqDto.getEmail())) {
+        if (isEmailDuplicate(registerReqDto.getEmail())) {
             throw new IllegalArgumentException("이미 등록된 이메일입니다.");
         }
 
@@ -85,7 +87,7 @@ public class UserService {
         Level level = null;
         if ("USER".equalsIgnoreCase(registerReqDto.getRole())) {
             level = levelRepository.findById(registerReqDto.getLevelId())
-                .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
         }
 
         // 비밀번호 암호화
@@ -102,7 +104,7 @@ public class UserService {
         user.setIsApproved(!registerReqDto.getRole().equals("INSTRUCTOR")); // 기본적으로 INSTRUCTOR는 승인되지 않음
 
         User savedUser = userRepository.save(user);
-        return new UserResDto(savedUser);  // UserResDto로 변환하여 응답
+        return new UserResDto(savedUser); // UserResDto로 변환하여 응답
     }
 
     // OAuth2 로그인 후 받은 정보로 회원가입 처리
@@ -137,7 +139,7 @@ public class UserService {
         }
 
         userRepository.save(user); // DB에 저장
-        return new UserResDto(user);  // UserResDto로 변환하여 응답
+        return new UserResDto(user); // UserResDto로 변환하여 응답
     }
 
     // 로그인
@@ -168,7 +170,7 @@ public class UserService {
     public void deleteUser(Long userId) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 사용자가 존재하면 사용자 삭제
         userRepository.delete(user);
@@ -179,7 +181,7 @@ public class UserService {
     public UserResDto updateUserInfo(Long userId, UpdateUserReqDto updateUserReqDto) {
         // 사용자 확인
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
         // 이메일 중복 체크
         if (!user.getEmail().equals(updateUserReqDto.getEmail()) && userRepository.existsByEmail(updateUserReqDto.getEmail())) {
@@ -197,19 +199,19 @@ public class UserService {
 
         if (updateUserReqDto.getLevelId() != null) {
             Level level = levelRepository.findById(updateUserReqDto.getLevelId())
-                .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
+                    .orElseThrow(() -> new IllegalArgumentException("잘못된 레벨 ID입니다."));
             user.setLevel(level);
         }
 
         User updatedUser = userRepository.save(user);
         return new UserResDto(updatedUser);
     }
-      // 수강 중인 강의 목록 조회
+    // 수강 중인 강의 목록 조회
 //    public List<Enrollment> getCurrentEnrollments(Long userId) {
 //        return enrollmentRepository.findByUserIdAndStatus(userId, "ENROLLED");
 //    }
 //
-      // 결제 내역 조회
+    // 결제 내역 조회
 //    public List<Payment> getPaymentHistory(Long userId) {
 //        return paymentRepository.findByUserId(userId);
 //    }
@@ -219,7 +221,7 @@ public class UserService {
         return wishlistRepository.findByUserId(userId);
     }
 
-      // 후기 목록 조회
+    // 후기 목록 조회
     public List<Review> getReviews(Long userId) {
         return reviewRepository.findByUserId(userId);
     }
@@ -227,14 +229,14 @@ public class UserService {
     // 내가 등록한 질문 목록 조회
     public List<QuestionDto> getUserQuestions(Long userId) {
         return questionRepository.findByUserId(userId)
-            .stream()
-            .map(question -> QuestionDto.builder()
-                    .questionId(question.getId())
-                    .classId(question.getLecture().getClasses().getId())
-                    .userId(question.getUser().getId())
-                    .question(question.getQuestion())
-                    .createdAt(question.getCreatedAt())
-                    .build())
-            .toList();
+                .stream()
+                .map(question -> QuestionDto.builder()
+                        .questionId(question.getId())
+                        .classId(question.getLecture().getClasses().getId())
+                        .userId(question.getUser().getId())
+                        .question(question.getQuestion())
+                        .createdAt(question.getCreatedAt())
+                        .build())
+                .toList();
     }
 }
