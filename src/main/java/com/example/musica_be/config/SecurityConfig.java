@@ -24,6 +24,12 @@ public class SecurityConfig {
     @Autowired
     private KakaoConfig kakaoConfig;
 
+    // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:36)
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    } // 여기까지 추가한 코드
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -68,12 +74,17 @@ public class SecurityConfig {
                         "/api/users/check-email",
                         "/api/levels"
                 ).permitAll()
-                .requestMatchers("/api/**").hasRole("USER")
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
+//                // URL 경로를 역할별로 나눔 // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+//                .requestMatchers("/api/users/**").hasRole("USER") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+//                .requestMatchers("/api/instructors/**").hasRole("INSTRUCTOR") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+//                .requestMatchers("/api/admins/**").hasRole("ADMIN") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+//                .requestMatchers("/api/**").hasRole("USER") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
+//                .requestMatchers("/admin/**").hasRole("ADMIN") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
+//                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
                 .anyRequest().authenticated()
                 .and()
-                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class); // 원래 코드
+//                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // todo: 수정한 코드 - 강동균 (2025. 07. 10. 23:35) → 빈 주입 방식
 
         // .oauth2Login() 설정은 개발 중엔 주석처리
         return http.build();

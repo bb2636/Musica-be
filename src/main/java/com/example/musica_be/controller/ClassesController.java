@@ -6,6 +6,7 @@ import com.example.musica_be.dto.classes.ClassSummaryDto;
 import com.example.musica_be.dto.classes.ClassUpdateReqDto;
 import com.example.musica_be.service.classes.ClassesService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,6 +15,8 @@ import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
+@Slf4j
+//@RequestMapping("/api/instructors/classes")
 @RequestMapping("/api/classes")
 public class ClassesController {
 
@@ -25,6 +28,8 @@ public class ClassesController {
         @RequestBody ClassCreateReqDto dto,
         @RequestHeader("Authorization") String jwt
     ) {
+        log.info("이게 출력된다면 클래스 컨트롤러까지 들어온 것: ClassesController");
+        System.out.println("이게 출력된다면 클래스 컨트롤러까지 들어온 것: ClassesController");
         Long classId = classesService.createClass(dto, jwt);
         return ResponseEntity.status(201).body(Map.of(
             "class_id", classId,
