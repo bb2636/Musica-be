@@ -18,10 +18,10 @@ public class MusicAiClientImpl implements MusicAiClient {
     // 외부 API 와의 요청, 응답 처리에 사용됨
     private final RestTemplate restTemplate;
 
-    @Value("${spring.musicai.api.key}")
+    @Value("${musicai.api.key}")
     private String apiKey;
 
-    @Value("${spring.musicai.api.base-url}")
+    @Value("${musicai.api.base-url}")
     private String baseUrl;
 
     // Presigned URL 발급 요청을 보내고 응답으로 uploadUrl 과 downloadUrl 을 받음

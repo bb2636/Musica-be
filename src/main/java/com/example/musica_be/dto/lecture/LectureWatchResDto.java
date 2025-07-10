@@ -7,13 +7,18 @@ import lombok.Getter;
 @Getter
 @Builder
 public class LectureWatchResDto {
-    private String videoUrl;
+    private Long lectureId;
+    private String title;
+    private String videoUrl;       // presigned GET URL (nullable)
+    private String fileUrl;        // presigned GET URL (nullable)
     private Integer progress;
 
-    public static LectureWatchResDto from(Lecture lecture) {
+    public static LectureWatchResDto from(Lecture lecture, String videoUrl, String fileUrl) {
         return LectureWatchResDto.builder()
-            .videoUrl(lecture.getVideoUrl())
-            .progress(lecture.getProgress())
+            .lectureId(lecture.getId())
+            .title(lecture.getTitle())
+            .videoUrl(videoUrl)
+            .fileUrl(fileUrl)
             .build();
     }
 }

@@ -25,10 +25,10 @@ public class InstrumentAnalysisService {
     private final MusicAiClient musicAiClient;
     private final S3Presigner s3Presigner;
 
-    @Value("${spring.musicai.api.workflow-slug}")
+    @Value("${musicai.api.workflow-slug}")
     private String workflowSlug;
 
-    @Value("${spring.cloud.aws.s3.bucket}")
+    @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
     /**
