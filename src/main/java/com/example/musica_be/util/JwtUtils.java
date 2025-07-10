@@ -35,6 +35,7 @@ public class JwtUtils {
   }
 
   public static String getUserIdFromToken(String token) {
+    token = token.startsWith("Bearer ") ? token.substring(7) : token;
     return Jwts.parserBuilder()
             .setSigningKey(SECRET_KEY)
             .build()
@@ -44,6 +45,7 @@ public class JwtUtils {
   }
 
   public static String getRoleFromToken(String token) {
+    token = token.startsWith("Bearer ") ? token.substring(7) : token;
     return Jwts.parserBuilder()
             .setSigningKey(SECRET_KEY)
             .build()
@@ -55,10 +57,10 @@ public class JwtUtils {
     String email = getEmailFromToken(refreshToken);
     String userId = getUserIdFromToken(refreshToken);
     String role = getRoleFromToken(refreshToken);
-
     return generateAccessToken(email, userId, role);
   }
   public static String getEmailFromToken(String token) {
+    token = token.startsWith("Bearer ") ? token.substring(7) : token;
     return Jwts.parserBuilder()
             .setSigningKey(SECRET_KEY)
             .build()

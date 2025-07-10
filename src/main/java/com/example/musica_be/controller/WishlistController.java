@@ -19,54 +19,32 @@ public class WishlistController {
     private final WishlistService wishlistService;
     private final UserRepository userRepository;
 
+    // 찜 추가
     @PostMapping("/classes/{classId}")
     public ResponseEntity<WishlistActionResponseDto> addWishlist(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long classId) {
-        // 1. 토큰에서 "Bearer " 제거
-        String token = authHeader.replace("Bearer ", "");
-
-        // 2. 이메일 추출
-        String email = JwtUtils.getEmailFromToken(token);
-//        System.out.println("파싱된 이메일: " + email);
-
-        // 3. 유저 조회
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
-//        System.out.println("유저 ID: " + user.getId());
-
-        // 4. userId를 서비스에 전달
-        WishlistActionResponseDto response = wishlistService.addWishlist(user.getId(), classId);
-//        System.out.println("찜 응답: " + response.getMessage());
-
+        Long userId = JwtUtils.extractUserId(authHeader);
+        WishlistActionResponseDto response = wishlistService.addWishlist(userId, classId);
         return ResponseEntity.ok(response);
     }
 
+    // 찜 삭제
     @DeleteMapping("/classes/{classId}")
     public ResponseEntity<WishlistActionResponseDto> deleteWishlist(
             @RequestHeader("Authorization") String authHeader,
             @PathVariable Long classId) {
-        String token = authHeader.replace("Bearer ", "");
-        String email = JwtUtils.getEmailFromToken(token);
-
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
-
-        WishlistActionResponseDto response = wishlistService.deleteWishlist(user.getId(), classId);
-
+        Long userId = JwtUtils.extractUserId(authHeader);
+        WishlistActionResponseDto response = wishlistService.deleteWishlist(userId, classId);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/classes")
+    // 찜 목록 조회(유저 개인용 - 마이페이지)
+    @GetMapping("/mywishlist")
     public ResponseEntity<WishlistClassListResponseDto> getWishList(
             @RequestHeader("Authorization") String authHeader) {
-        String token = authHeader.replace("Bearer ", "");
-        String email = JwtUtils.getEmailFromToken(token);
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."));
-
-        WishlistClassListResponseDto response = wishlistService.getWishlistClasses(user.getId());
-
+        Long userId = JwtUtils.extractUserId(authHeader);
+        WishlistClassListResponseDto response = wishlistService.getWishlistClasses(userId);
         return ResponseEntity.ok(response);
     }
 

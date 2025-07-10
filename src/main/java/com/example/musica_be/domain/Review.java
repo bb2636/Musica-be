@@ -1,5 +1,7 @@
 package com.example.musica_be.domain;
 
+import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,9 +24,13 @@ public class Review {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // 👇 임시로 강의 ID만 저장
-    @Column(name = "lecture_id", nullable = false)
-    private Integer lectureId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "class_id", nullable = false)
+    private Classes classes;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "lecture_id", nullable = false)
+    private Lecture lecture;
 
     @Column(nullable = false)
     private Integer rating;

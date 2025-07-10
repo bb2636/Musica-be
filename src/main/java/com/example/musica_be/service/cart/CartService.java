@@ -3,6 +3,7 @@ package com.example.musica_be.service.cart;
 import com.example.musica_be.domain.cart.Cart;
 import com.example.musica_be.domain.cart.CartItem;
 import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.cart.CartDto;
 import com.example.musica_be.dto.cart.CartItemDto;
@@ -11,6 +12,8 @@ import com.example.musica_be.dto.cart.CartResponseDto;
 import com.example.musica_be.repository.cart.CartItemRepository;
 import com.example.musica_be.repository.cart.CartRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.payment.PaymentItemRepository;
+import com.example.musica_be.repository.payment.PaymentRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,7 @@ public class CartService {
   private final CartItemRepository cartItemRepository;
   private final UserRepository userRepository;
   private final ClassesRepository classesRepository;
+  private final PaymentItemRepository paymentItemRepository;
 
   @Transactional
   // 유저의 카트 정보
@@ -71,6 +75,26 @@ public class CartService {
     Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     Cart cart = cartRepository.findByUserId(userId);
 
+    // 카트가 없을 경우 유저의 카트 추가
+    if (cart == null) {
+      User user = userRepository.findById(userId)
+          .orElseThrow(() -> new RuntimeException("User not found"));
+      cart = new Cart();
+      cart.setUser(user);
+      cart.setCreated_at(LocalDateTime.now());
+      cartRepository.save(cart);
+    }
+
+    // 해당 클래스가 이미 결제된 경우 → 장바구니 담기 불가
+    List<PaymentItem> paidItems = paymentItemRepository.findByUserId(userId);
+    boolean alreadyPurchased = paidItems.stream()
+        .filter(item -> !"CANCELED".equalsIgnoreCase(item.getPayment().getStatus().getName()))
+        .anyMatch(item -> item.getClasses().getId().equals(classId));
+
+    if (alreadyPurchased) {
+      throw new IllegalStateException("이미 결제한 강의는 장바구니에 담을 수 없습니다.");
+    }
+
     // 클래스가 이미 장바구니에 담겼는지 체크
     boolean exists = cartItemRepository.existsByCartIdAndClassesId(cart.getId(), classId);
     if (exists) {
@@ -83,6 +107,8 @@ public class CartService {
     CartItem cartItem = new CartItem();
     cartItem.setCart(cart);
     cartItem.setClasses(classEntity);
+    cartItem.setAmount(classEntity.getClassPrice());
+    cartItem.setAdded_at(LocalDateTime.now());
     cartItemRepository.save(cartItem);
 
     return CartResponseDto.builder()

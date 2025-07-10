@@ -11,4 +11,5 @@ import java.util.List;
 public interface LectureRepository extends JpaRepository<Lecture, Long> {
     int countByClasses(Classes classes);
     List<Lecture> findByClasses(Classes classes);
+    List<Lecture> findByClassesId(Long classId);
 }
