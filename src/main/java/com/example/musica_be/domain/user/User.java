@@ -30,7 +30,7 @@ public class User {
     private Role role;
 
     @ManyToOne
-    @JoinColumn(name = "level_id", nullable = true)  // `role`이 USER일 경우만 필요
+    @JoinColumn(name = "level_id", nullable = true)gi  // `role`이 USER일 경우만 필요
     private Level level;
 
     @Column(nullable = false)

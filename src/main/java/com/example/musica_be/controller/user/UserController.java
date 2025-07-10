@@ -3,6 +3,7 @@ package com.example.musica_be.controller.user;
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.Wishlist;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.question.QuestionDto;
 import com.example.musica_be.dto.user.UpdateUserReqDto;
 import com.example.musica_be.security.JwtTokenService;
 import com.example.musica_be.service.user.UserService;
@@ -121,10 +122,10 @@ public class UserController {
         return ResponseEntity.ok(reviews);
     }
 //
-//    @PreAuthorize("hasRole('USER')")
-//    @GetMapping("/users/mypage/questions")
-//    public ResponseEntity<List<Question>> getUserQuestions(@AuthenticationPrincipal User user) {
-//        List<Question> questions = userService.getUserQuestions(user.getId());
-//        return ResponseEntity.ok(questions);
-//    }
+    @PreAuthorize("hasRole('USER')")
+    @GetMapping("/users/mypage/questions")
+    public ResponseEntity<List<QuestionDto>> getMyQuestions(
+        @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(userService.getUserQuestions(user.getId()));
+    }
 }
