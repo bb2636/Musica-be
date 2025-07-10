@@ -63,33 +63,70 @@ public class ReviewController {
         return ResponseEntity.ok(response);
     }
 
-    // 후기 목록 조회 (강의 기준)
-    @GetMapping("/lecture/{lectureId}")
-    public ResponseEntity<List<ReviewResponseDto>> getLectureReviews(
-            @PathVariable Long lectureId,
-            @RequestHeader(value = "Authorization", required = false) String jwt) {
-        Long userId = jwt != null ? JwtUtils.extractUserId(jwt) : null;
-        return ResponseEntity.ok(reviewService.getReviewsByLecture(lectureId, userId));
-    }
 
-    // 후기 단건 조회
-    @GetMapping("/{reviewId}")
-    public ResponseEntity<ReviewResponseDto> getReviewById(
-            @PathVariable Integer reviewId,
-            @RequestHeader(value = "Authorization", required = false) String jwt) {
-        Long userId = jwt != null ? JwtUtils.extractUserId(jwt) : null;
-        return ResponseEntity.ok(reviewService.getReviewById(reviewId, userId));
-    }
 
-    // 내 후기 목록 조회
+
+    // 1. 유저 개인용 후기 목록 (마이페이지)
     @GetMapping("/mypage")
-    public ResponseEntity<List<ReviewResponseDto>> getMyReviews(
+    public ResponseEntity<List<ReviewResponseDto>> getMyReviewss(
             @RequestHeader("Authorization") String jwt) {
         User user = getUser(jwt);
         return ResponseEntity.ok(reviewService.getReviewsByUser(user));
     }
 
-    // 특정 강의의 후기 요약
+    // 2. 클래스별 후기 전체 조회 (공개)
+    @GetMapping("/classes/{classId}")
+    public ResponseEntity<List<ReviewResponseDto>> getClassReviews(
+            @PathVariable Long classId,
+            @RequestHeader(value = "Authorization", required = false) String jwt) {
+        Long userId = null;
+        // Authorization 헤더가 있을 때만 시도 (없으면 로그인 안 한 상태로 간주)
+        if(jwt != null && jwt.startsWith("Bearer ")) {
+            try {
+                userId = JwtUtils.extractUserId(jwt);
+            } catch (Exception e) {
+                // 실패해도 무시하고 null 유지 (공개 API 여서)
+                userId = null;
+            }
+        }
+
+        return ResponseEntity.ok(reviewService.getReviewsByClass(classId, userId));
+    }
+
+//    // 3. 강의별 후기 전체 조회 (공개)
+//    @GetMapping("/lecture/{lectureId}")
+//    public ResponseEntity<List<ReviewResponseDto>> getLectureReviews(
+//            @PathVariable Long lectureId,
+//            @RequestHeader(value = "Authorization", required = false) String jwt {
+//        Long userId = null;
+//        if(jwt != null && jwt.startsWith("Bearer ")) {
+//            try {
+//                userId = JwtUtils.extractUserId(jwt);
+//            } catch (Exception e) {
+//                userId = null;
+//            }
+//        }
+//
+//        return ResponseEntity.ok(reviewService.getReviewsByLecture(lectureId, userId));
+//    }
+
+    // 4. 후기 단건 조회 (공개)
+    @GetMapping("/{reviewId}")
+    public ResponseEntity<ReviewResponseDto> getReviewById(
+            @PathVariable Integer reviewId,
+            @RequestHeader(value = "Authorization", required = false) String jwt) {
+        Long userId = null;
+        if(jwt != null && jwt.startsWith("Bearer ")) {
+            try {
+                userId = JwtUtils.extractUserId(jwt);
+            } catch (Exception e) {
+                userId = null;
+            }
+        }
+        return ResponseEntity.ok(reviewService.getReviewById(reviewId, userId));
+    }
+
+    // 5. 특정 강의의 후기 요약 (AI 활용)
     @GetMapping("/lecture/{lectureId}/summary")
     public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
         // 1. 강의에 대한 raw 댓글 모음
@@ -105,6 +142,7 @@ public class ReviewController {
         ));
     }
 
+    // 6. 인증 실패 대응 ( JWT 파싱 실패시 )
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @ExceptionHandler(IllegalArgumentException.class)
     public Map<String, String> handleIllegalArgument(IllegalArgumentException ex) {
