@@ -110,7 +110,7 @@ public class ReviewController {
     }
 
     // 4. 특정 강의의 후기 요약 (AI 활용)
-    @GetMapping("/lecture/{lectureId}/summary")
+    @GetMapping("/summary/lecture/{lectureId}")
     public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
         // 1. 강의에 대한 raw 댓글 모음
         String rawComments = reviewService.getRawCommentsByLecture(lectureId);
