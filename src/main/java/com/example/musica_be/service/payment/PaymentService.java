@@ -41,7 +41,7 @@ public class PaymentService {
   private final PaymentTypeRepository paymentTypeRepository;
 
   @Qualifier("tossWebClient")
-  WebClient tossWebClient;
+  private final WebClient tossWebClient;
 
   // 수강 중인 강의
   public List<EnrolledClassDto> listEnrolledClasses(String jwt) {

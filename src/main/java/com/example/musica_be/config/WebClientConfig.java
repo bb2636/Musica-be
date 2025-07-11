@@ -24,14 +24,14 @@ public class WebClientConfig {
                 .build();
     }
 
-    @Value("${toss.api.key}")
-    private String  tossApiKey;
+    @Value("${toss.api.test_sk}")
+    private String  tossApiKeySk;
     @Bean(name = "tossWebClient")
     public WebClient tossWebClient() {
-        tossApiKey = Base64.getEncoder().encodeToString((tossApiKey+":").getBytes());
+        tossApiKeySk = Base64.getEncoder().encodeToString((tossApiKeySk+":").getBytes());
         return WebClient.builder()
             .baseUrl("https://api.tosspayments.com/v1")
-            .defaultHeader(HttpHeaders.AUTHORIZATION, "Basic "+tossApiKey)
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Basic "+tossApiKeySk)
             .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
             .build();
     }
