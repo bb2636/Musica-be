@@ -206,6 +206,10 @@ public class PaymentService {
       System.err.println("Toss 결제 승인 실패: " + e.getResponseBodyAsString());
       throw new RuntimeException("결제 승인 실패: " + e.getMessage());
     }
+    if (dto.getStatus().equals( "DONE")  ||  dto.getMethod().equals("카드")){
+      dto.setStatus("PAID");
+      dto.setMethod("CARD");
+    }
     // Payment 생성
     Payment payment = new Payment();
 
