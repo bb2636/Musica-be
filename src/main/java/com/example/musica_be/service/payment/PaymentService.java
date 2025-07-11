@@ -93,54 +93,81 @@ public class PaymentService {
       enrolledClasses.add(dto);
     }
 
-    return enrolledClasses;
-  }
+    
+    @Transactional
+    public List<PaymentSummaryDto> getPaymentSummaries(String jwt) {
+        Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
+        List<Payment> payments = paymentRepository.findAllByUserId(userId);
 
+        List<PaymentSummaryDto> result = new ArrayList<>();
 
-  @Transactional
-  public List<PaymentSummaryDto> getPaymentSummaries(String jwt) {
-    Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
-    List<Payment> payments = paymentRepository.findAllByUserId(userId);
+        for (Payment payment : payments) {
+            List<PaymentItem> items = paymentItemRepository.findByPayment(payment);
 
-    List<PaymentSummaryDto> result = new ArrayList<>();
+            if (items.isEmpty()) continue;
 
-    for (Payment payment : payments) {
-      List<PaymentItem> items = paymentItemRepository.findByPayment(payment);
+            Classes firstClass = items.get(0).getClasses();
 
-      if (items.isEmpty()) continue;
+            String title = firstClass.getTitle();
+            if (items.size() > 1) {
+                title += " 외 " + (items.size() - 1);
+            }
 
-      Classes firstClass = items.get(0).getClasses();
+            PaymentSummaryDto dto = PaymentSummaryDto.builder().payment_id(payment.getId()).title(title).thumbnailUrl(firstClass.getThumbnailUrl()).amount(payment.getAmount()).status(String.valueOf(payment.getStatus())) // enum -> 문자열
+                .paid_at(payment.getPaid_at()).build();
 
-      String title = firstClass.getTitle();
-      if (items.size() > 1) {
-        title += " 외 " + (items.size() - 1);
-      }
+            result.add(dto);
+        }
 
-      PaymentSummaryDto dto = PaymentSummaryDto.builder().payment_id(payment.getId()).title(title).thumbnailUrl(firstClass.getThumbnailUrl()).amount(payment.getAmount()).status(String.valueOf(payment.getStatus())) // enum -> 문자열
-          .paid_at(payment.getPaid_at()).build();
-
-      result.add(dto);
+        return result;
     }
 
-    return result;
-  }
+    @Transactional
+    public List<PaymentGroupDto> getGroupedPayments(String jwt, Long reservationId) {
+        Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
+        List<Payment> payments;
 
-  @Transactional
-  public List<PaymentGroupDto> getGroupedPayments(String jwt, Long reservationId) {
-    Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
-    List<Payment> payments;
+        if (reservationId != null) {
+            // reservationId에 해당하는 결제 단일 조회 (유저 소유 확인 포함)
+            Payment payment = paymentRepository.findByIdAndUserId(reservationId, userId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 예약 결제 내역을 찾을 수 없습니다."));
+            payments = List.of(payment);
+        } else {
+            // 전체 결제 조회
+            payments = paymentRepository.findAllByUserId(userId);
+        }
 
-    if (reservationId != null) {
-      // reservationId에 해당하는 결제 단일 조회 (유저 소유 확인 포함)
-      Payment payment = paymentRepository.findByIdAndUserId(reservationId, userId)
-          .orElseThrow(() -> new IllegalArgumentException("해당 예약 결제 내역을 찾을 수 없습니다."));
-      payments = List.of(payment);
-    } else {
-      // 전체 결제 조회
-      payments = paymentRepository.findAllByUserId(userId);
+        List<PaymentGroupDto> result = new ArrayList<>();
+
+        for (Payment payment : payments) {
+            List<PaymentItem> items = paymentItemRepository.findByPayment(payment);
+
+            if (items.isEmpty()) continue;
+
+            List<EnrolledClassItemDto> classList = items.stream().map(item -> {
+                Classes classes = item.getClasses();
+                return EnrolledClassItemDto.builder()
+                    .payment_item_id(item.getId())
+                    .class_id(classes.getId())
+                    .title(classes.getTitle())
+                    .thumbnailUrl(classes.getThumbnailUrl())
+                    .instructorName(classes.getInstructor().getName())
+                    .amount(classes.getClassPrice())
+                    .build();
+            }).toList();
+
+            PaymentGroupDto groupDto = PaymentGroupDto.builder()
+                .payment_id(payment.getId())
+                .totalAmount(payment.getAmount())
+                .paid_at(payment.getPaid_at())
+                .classes(classList)
+                .build();
+
+            result.add(groupDto);
+        }
+
+        return result;
     }
-
-    List<PaymentGroupDto> result = new ArrayList<>();
 
     for (Payment payment : payments) {
       List<PaymentItem> items = paymentItemRepository.findByPayment(payment);

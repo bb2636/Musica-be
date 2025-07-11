@@ -3,6 +3,7 @@ package com.example.musica_be.controller;
 import com.example.musica_be.dto.lecture.*;
 import com.example.musica_be.service.lecture.LectureService;
 import com.example.musica_be.util.JwtUtils;
+import io.jsonwebtoken.Jwt;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api")
@@ -37,29 +39,38 @@ public class LectureController {
 
     // 강의 수정
     @PutMapping("/instructor/lectures/{lectureId}")
-    public ResponseEntity<Void> updateLecture(
+    public ResponseEntity<Map<String, String>> updateLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId,
         @RequestBody @Valid LectureUpdateReqDto dto
     ) {
         lectureService.updateLecture(jwt, lectureId, dto);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of(
+            "message", "강의가 성공적으로 수정되었습니다.",
+            "lecture_id", lectureId.toString()
+        ));
     }
 
     // 강의 삭제
     @DeleteMapping("/instructor/lectures/{lectureId}")
-    public ResponseEntity<Void> deleteLecture(
+    public ResponseEntity<Map<String, String>> deleteLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId
     ) {
         lectureService.deleteLecture(jwt, lectureId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(Map.of(
+            "message", "강의가 정상적으로 삭제되었습니다.",
+            "lecture_id", lectureId.toString()
+        ));
     }
 
     // 강의 상세 조회
     @GetMapping("/lectures/{lectureId}")
-    public ResponseEntity<LectureDetailResDto> getLecture(@PathVariable Long lectureId) {
-        return ResponseEntity.ok(lectureService.getLectureDetail(lectureId));
+    public ResponseEntity<LectureDetailResDto> getLecture(
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Long lectureId
+    ) {
+        return ResponseEntity.ok(lectureService.getLectureDetail(jwt, lectureId));
     }
 
     // 강의 목록 조회
@@ -82,7 +93,7 @@ public class LectureController {
     }
 
     // 3. 강사 전용
-    @GetMapping("/instructor/classes/{classId}/lectures")
+    @GetMapping("/instructors/classes/{classId}/lectures")
     public ResponseEntity<List<LectureSummaryDto>> getInstructorLectureList(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId
@@ -102,13 +113,16 @@ public class LectureController {
 
     // 강의 순서 변경
     @PatchMapping("/classes/{classId}/lectures/order")
-    public ResponseEntity<Void> updateLectureOrder(
+    public ResponseEntity<Map<String, Object>> updateLectureOrder(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId,
         @RequestBody @Valid LectureOrderUpdateReqDto dto
     ) {
-        lectureService.updateLectureOrder(jwt, classId, dto);
-        return ResponseEntity.ok().build();
+        List<Long> updatedLectureIds = lectureService.updateLectureOrder(jwt, classId, dto);
+        return ResponseEntity.ok(Map.of(
+            "message", "강의 순서가 변경되었습니다.",
+            "변경 후 강의 아이디", updatedLectureIds
+        ));
     }
 
     // 강의 진행률 변경

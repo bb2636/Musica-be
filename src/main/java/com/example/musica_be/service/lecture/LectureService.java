@@ -19,10 +19,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -113,11 +110,35 @@ public class LectureService {
 
     // 강의 상세 조회
     @Transactional(readOnly = true)
-    public LectureDetailResDto getLectureDetail(Long lectureId) {
-        // 존재하는 강의인지 확인
+    public LectureDetailResDto getLectureDetail(String jwt, Long lectureId) {
+        // 1. 강의 조회
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-        return LectureDetailResDto.from(lecture);
+
+        // 2. JWT가 null 또는 빈 문자열인 경우 → 비로그인 사용자로 처리
+        if (jwt == null || jwt.isBlank()) {
+            return LectureDetailResDto.from(lecture, null);  // 진행률 없음
+        }
+
+        // 3. 로그인 사용자일 경우 → userId 추출
+        Long userId;
+        try {
+            userId = JwtUtils.extractUserId(jwt);
+        } catch (Exception e) {
+            return LectureDetailResDto.from(lecture, null); // JWT 파싱 실패 → 비로그인 처리
+        }
+
+        // 4. 사용자 조회
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 5. 시청 진행률 조회
+        LectureProgress progress = lectureProgressRepository
+            .findByUserAndLecture(user, lecture)
+            .orElse(null);
+
+        // 6. DTO 변환
+        return LectureDetailResDto.from(lecture, progress);
     }
 
     // 강의 목록 조회
@@ -207,25 +228,50 @@ public class LectureService {
 
     // 강의 순서 변경
     @Transactional
-    public void updateLectureOrder(String jwt, Long classId, LectureOrderUpdateReqDto dto) {
+    public List<Long> updateLectureOrder(String jwt, Long classId, LectureOrderUpdateReqDto dto) {
+        // 1. JWT 토큰에서 사용자 ID 추출
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 존재하는 클래스인지 확인
+        // 2. 해당 클래스가 존재하는지 검증
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스를 찾을 수 없습니다."));
-        // 유저 권한 확인
+
+        // 3. 현재 사용자가 이 클래스의 강사인지 확인 (권한 검증)
         validateInstructor(classes, userId);
-        // 존재하는 강의인지 확인
+
+        // 4. 순서(order)의 중복 여부 및 유효성 검사용 Set
+        Set<Integer> seenOrders = new HashSet<>();
+
+        List<Long> updatedLectureIds = new ArrayList<>();
+
+        // 5. 순서 변경 요청 목록을 순회하며 하나씩 처리
         for (LectureOrderUpdateReqDto.LectureOrderDto item : dto.getOrders()) {
+
+            // 5-1. 동일한 순서가 여러 강의에 지정되어 있는 경우 에러
+            if (!seenOrders.add(item.getOrder())) {
+                throw new IllegalArgumentException("중복된 순서(order)가 있습니다.");
+            }
+
+            // 5-2. 순서는 1 이상 양수만 허용
+            if (item.getOrder() <= 0) {
+                throw new IllegalArgumentException("순서는 1 이상의 양수여야 합니다.");
+            }
+
+            // 5-3. 해당 강의 ID가 실제 존재하는지 확인
             Lecture lecture = lectureRepository.findById(item.getLectureId())
                 .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-            // 강의가 해당 클래스에 속하는지 확인
+
+            // 5-4. 해당 강의가 지정된 클래스에 속한 강의인지 확인
             if (!lecture.getClasses().getId().equals(classId)) {
                 throw new IllegalArgumentException("강의가 해당 클래스에 속하지 않습니다.");
             }
 
+            // 5-5. 순서 변경 적용
             lecture.changeOrder(item.getOrder());
+            updatedLectureIds.add(lecture.getId());
         }
+
+        return updatedLectureIds;
     }
 
     // 특정 사용자의 특정 강의에 대한 시청 시간을 저장하거나 갱신하는 로직
@@ -330,7 +376,7 @@ public class LectureService {
     // 강의 다운로드 URL 생성 - S3 Presigned
     // String key - fileObjectKey (fileUrl 에서 추출한 값, DB에 저장되어 있는 값)
     // 응답으로 downloadUrl, 즉 실제로 강의 영상을 볼 수 있는 url 을 반환
-    // todo: api 테스트 후 private 으로 변경
+    // todo: api 테스트 후 public → private 으로 변경
     public String generateDownloadUrl(String key) {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("S3 객체 키(key)는 null이거나 비어 있을 수 없습니다.");
