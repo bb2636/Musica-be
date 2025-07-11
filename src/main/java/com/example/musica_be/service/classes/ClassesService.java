@@ -15,6 +15,7 @@ import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClassesService {
 
     private final ClassesRepository classesRepository;
@@ -34,6 +36,8 @@ public class ClassesService {
     @Transactional
     public Long createClass(ClassCreateReqDto dto, String jwt) {
         Long userId = JwtUtils.extractUserId(jwt);
+        log.info("이게 출력된다면 클래스 서비스까지 들어온 것: ClassService");
+        System.out.println("이게 출력된다면 클래스 서비스까지 들어온 것: ClassService");
 
         // 존재하는 사용자인지 확인
         User instructor = userRepository.findById(userId)
@@ -124,8 +128,10 @@ public class ClassesService {
 
     // ====== 헬퍼 메서드 ======
     private void validateInstructor(Classes classes, Long userId) {
+        log.info("클래스의 유저 아이디: {}", classes.getInstructor().getId());
+        log.info("파라미터 유저 아이디: {}", userId);
         if (!classes.getInstructor().getId().equals(userId)) {
-            throw new SecurityException("권한이 없습니다.");
+            throw new SecurityException("권한이 없습니다: 강사 본인의 클래스만 수정/삭제할 수 있습니다.");
         }
     }
 }

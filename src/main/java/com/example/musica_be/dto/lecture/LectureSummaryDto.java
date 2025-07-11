@@ -16,6 +16,12 @@ public class LectureSummaryDto {
     // 선택: 시청률 (%)
     private Integer progressRate;
 
+    // 선택: 전체 강의 길이 (초 단위)
+    private Integer duration;
+
+    // 선택: 시청 완료 여부
+    private Boolean isCompleted;
+
     /**
      * 공개용 또는 강사용 (진행률 없음)
      */
@@ -24,7 +30,9 @@ public class LectureSummaryDto {
             lecture.getId(),
             lecture.getTitle(),
             lecture.getLectureOrder(),
-            null // 시청률 없음
+            null,        // progressRate
+            lecture.getDuration(),     // duration 포함
+            null                       // isCompleted 없음
         );
     }
 
@@ -33,17 +41,21 @@ public class LectureSummaryDto {
      */
     public static LectureSummaryDto from(Lecture lecture, LectureProgress progress) {
         int rate = 0;
+        boolean completed = false;
 
-        if (progress != null && lecture.getDuration() > 0) {
+        if (progress != null && lecture.getDuration() != null && lecture.getDuration() > 0) {
             double ratio = (double) progress.getWatchedSeconds() / lecture.getDuration();
-            rate = (int) Math.min(100, Math.round(ratio * 100)); // 최대 100%
+            rate = (int) Math.min(100, Math.round(ratio * 100));
+            completed = Boolean.TRUE.equals(progress.getIsCompleted());
         }
 
         return new LectureSummaryDto(
             lecture.getId(),
             lecture.getTitle(),
             lecture.getLectureOrder(),
-            rate
+            rate,
+            lecture.getDuration(),
+            completed
         );
     }
 }

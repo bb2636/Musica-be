@@ -18,10 +18,22 @@ public class WebClientConfig {
     public WebClient openAiWebClient() {
         System.out.println("open key" + openAiApiKey);
         return WebClient.builder()
-                .baseUrl("https://api.openai.com/v1")
-                .defaultHeader("Authorization", "Bearer " + openAiApiKey)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+            .baseUrl("https://api.openai.com/v1")
+            .defaultHeader("Authorization", "Bearer " + openAiApiKey)
+            .defaultHeader("Content-Type", "application/json")
+            .build();
+    }
+
+    @Value("${toss.api.test_sk}")
+    private String  tossApiKeySk;
+    @Bean(name = "tossWebClient")
+    public WebClient tossWebClient() {
+        tossApiKeySk = Base64.getEncoder().encodeToString((tossApiKeySk+":").getBytes());
+        return WebClient.builder()
+            .baseUrl("https://api.tosspayments.com/v1")
+            .defaultHeader(HttpHeaders.AUTHORIZATION, "Basic "+tossApiKeySk)
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+            .build();
     }
 
     @Value("${toss.api.test_sk}")

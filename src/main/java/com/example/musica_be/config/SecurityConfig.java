@@ -24,7 +24,7 @@ public class SecurityConfig {
     @Autowired
     private KakaoConfig kakaoConfig;
 
-    // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:36)
+    // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:36) - 생성자 주입을 위한 의존성 필드 및 생성자 추가
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
@@ -99,16 +99,16 @@ public class SecurityConfig {
         }
 
         ClientRegistration kakao = ClientRegistration.withRegistrationId("kakao")
-                .clientId(kakaoConfig.getClientId())
-                .clientSecret(kakaoConfig.getClientSecret())
-                .redirectUri(kakaoConfig.getRedirectUri())
-                .authorizationUri("https://kauth.kakao.com/oauth/authorize")
-                .tokenUri("https://kauth.kakao.com/oauth/token")
-                .userInfoUri("https://kapi.kakao.com/v2/user/me")
-                .userNameAttributeName("id")
-                .clientName("Kakao")
-                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-                .build();
+            .clientId(kakaoConfig.getClientId())
+            .clientSecret(kakaoConfig.getClientSecret())
+            .redirectUri(kakaoConfig.getRedirectUri())
+            .authorizationUri("https://kauth.kakao.com/oauth/authorize")
+            .tokenUri("https://kauth.kakao.com/oauth/token")
+            .userInfoUri("https://kapi.kakao.com/v2/user/me")
+            .userNameAttributeName("id")
+            .clientName("Kakao")
+            .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
+            .build();
 
         return new InMemoryClientRegistrationRepository(kakao);
     }

@@ -24,8 +24,8 @@ public class QnaController {
     // 질문 등록
     @PostMapping("/users/questions")
     public ResponseEntity<CreateQuestionResDto> createQuestion(
-            @RequestHeader("Authorization") String jwt,
-            @RequestBody CreateQuestionReqDto request) {
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody CreateQuestionReqDto request) {
         Long userId = JwtUtils.extractUserId(jwt);
         return ResponseEntity.ok(qnaService.createQuestion(request, userId));
     }
@@ -33,9 +33,9 @@ public class QnaController {
     // 질문 수정
     @PutMapping("/users/questions/{questionId}")
     public ResponseEntity<Void> updateQuestion(
-            @RequestHeader("Authorization") String jwt,
-            @PathVariable Long questionId,
-            @RequestBody UpdateQuestionReqDto request) throws Exception {
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Long questionId,
+        @RequestBody UpdateQuestionReqDto request) throws Exception {
         Long userId = JwtUtils.extractUserId(jwt);
         qnaService.updateQuestion(questionId, request, userId);
         return ResponseEntity.ok().build();
@@ -44,8 +44,8 @@ public class QnaController {
     // 질문 삭제
     @DeleteMapping("/users/questions/{questionId}")
     public ResponseEntity<Void> deleteQuestion(
-            @RequestHeader("Authorization") String jwt,
-            @PathVariable Long questionId) throws Exception {
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Long questionId) throws Exception {
         Long userId = JwtUtils.extractUserId(jwt);
         qnaService.deleteQuestion(questionId, userId);
         return ResponseEntity.ok().build();
@@ -54,15 +54,15 @@ public class QnaController {
     // 특정 클래스에 등록된 모든 질문 조회
     @GetMapping("/classes/{classId}/questions")
     public ResponseEntity<List<QuestionDto>> getQuestionsByClass(
-            @PathVariable Long classId) {
+        @PathVariable Long classId) {
         return ResponseEntity.ok(qnaService.getQuestionsByClass(classId));
     }
 
     // 답변 등록 (강사만)
     @PostMapping("/instructors/answers")
     public ResponseEntity<CreateAnswerResDto> createAnswer(
-            @RequestHeader("Authorization") String jwt,
-            @RequestBody CreateAnswerReqDto request) throws Exception {
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody CreateAnswerReqDto request) throws Exception {
         Long userId = JwtUtils.extractUserId(jwt);
         request.setUserId(userId);
         return ResponseEntity.ok(qnaService.createAnswer(request));
@@ -71,7 +71,7 @@ public class QnaController {
     // 강사 마이페이지에서 자신의 답변 리스트 조회
     @GetMapping("/instructors/{instructorId}/answers")
     public ResponseEntity<List<InstructorAnswerDto>> getInstructorAnswers(
-            @PathVariable Long instructorId) {
+        @PathVariable Long instructorId) {
         return ResponseEntity.ok(qnaService.getInstructorAnswers(instructorId));
     }
 }

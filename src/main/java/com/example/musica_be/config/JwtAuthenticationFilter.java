@@ -76,7 +76,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // ✅ 사용자 ID + 권한으로 인증 객체 생성
             // 이렇게 해야 hasRole("INSTRUCTOR") 등의 인가 설정이 정상 작동함
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    userId, null, authorities);
+                userId, null, authorities);
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
