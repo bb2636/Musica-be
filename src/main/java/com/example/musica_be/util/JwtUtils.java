@@ -11,7 +11,6 @@ public class JwtUtils {
   private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
   private static final long ACCESS_TOKEN_EXPIRATION_TIME = 3600_000;
 
-  // "Bearer {token}" 형식의 JWT 문자열에서 userId(Long)를 추출하는 유틸 메서드
   public static Long extractUserId(String jwtWithBearer) {
     try {
       String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
@@ -22,12 +21,16 @@ public class JwtUtils {
     }
   }
 
-  // 액세스 토큰 생성 (role 추가)
   public static String generateAccessToken(String email, String userId, String role) {
+    return generateAccessToken(email, userId, role, "");
+  }
+
+  public static String generateAccessToken(String email, String userId, String role, String name) {
     return Jwts.builder()
             .setSubject(userId)
             .claim("email", email)
             .claim("role", role)
+            .claim("name", name)
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
             .signWith(SECRET_KEY, SignatureAlgorithm.HS512)
@@ -53,12 +56,7 @@ public class JwtUtils {
             .getBody()
             .get("role", String.class);
   }
-  public static String refreshAccessToken(String refreshToken) {
-    String email = getEmailFromToken(refreshToken);
-    String userId = getUserIdFromToken(refreshToken);
-    String role = getRoleFromToken(refreshToken);
-    return generateAccessToken(email, userId, role);
-  }
+
   public static String getEmailFromToken(String token) {
     token = token.startsWith("Bearer ") ? token.substring(7) : token;
     return Jwts.parserBuilder()
@@ -69,8 +67,18 @@ public class JwtUtils {
             .get("email", String.class);
   }
 
+  public static String getNameFromToken(String token) {
+    token = token.startsWith("Bearer ") ? token.substring(7) : token;
+    return Jwts.parserBuilder()
+            .setSigningKey(SECRET_KEY)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .get("name", String.class);
+  }
+
   public static String generateRefreshToken(String email, String userId, String role) {
-    long refreshExpiration = 7 * 24 * 3600_000;  // 7일
+    long refreshExpiration = 7 * 24 * 3600_000;
     return Jwts.builder()
             .setSubject(userId)
             .claim("email", email)
@@ -79,5 +87,13 @@ public class JwtUtils {
             .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
             .signWith(SECRET_KEY, SignatureAlgorithm.HS512)
             .compact();
+  }
+
+  public static String refreshAccessToken(String refreshToken) {
+    String email = getEmailFromToken(refreshToken);
+    String userId = getUserIdFromToken(refreshToken);
+    String role = getRoleFromToken(refreshToken);
+    String name = getNameFromToken(refreshToken);
+    return generateAccessToken(email, userId, role, name);
   }
 }
