@@ -1,5 +1,6 @@
 package com.example.musica_be.dto.payment;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +15,7 @@ public class PaymentConfirmResponse {
   private String status;
   private String method;
   private String approvedAt;
-  private Card card;
+  private JsonNode card;
   private int totalAmount;
   private int vat;
 }
