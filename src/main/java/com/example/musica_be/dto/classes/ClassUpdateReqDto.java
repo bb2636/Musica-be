@@ -10,4 +10,5 @@ public class ClassUpdateReqDto {
     private Long difficultyId;
     private String thumbnailUrl;
     private Integer classPrice;
+    private Boolean isRecommended;
 }
