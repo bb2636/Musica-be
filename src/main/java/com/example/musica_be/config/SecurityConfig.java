@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
+    // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:36) - 생성자 주입을 위한 의존성 필드 및 생성자 추가
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CustomOAuth2SuccessHandler customOAuth2SuccessHandler;
     private final CustomOAuth2UserService customOAuth2UserService;
@@ -83,6 +84,8 @@ public class SecurityConfig {
                         "/login/oauth2/**", //리다이렉션 url 허용
                         "/oauth-success", // 프론트 리디렉션 용
                         "/api/user/signup" //카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
+                        "/api/payment/cart/checkout"// 카트 결제 (토스 결제를 위한)
+
                 ).permitAll()
                 // URL 경로를 역할별로 나눔 // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
                 .requestMatchers("/api/users/**","/api/auth/**").hasRole("USER") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
@@ -108,7 +111,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 //    @Bean
 //    public InMemoryClientRegistrationRepository clientRegistrationRepository() {
 //        if (kakaoConfig.getClientId() == null || kakaoConfig.getClientId().isEmpty()) {
@@ -130,3 +132,4 @@ public class SecurityConfig {
 //        return new InMemoryClientRegistrationRepository(kakao);
 //    }
 }
+

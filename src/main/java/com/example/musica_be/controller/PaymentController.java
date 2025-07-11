@@ -16,7 +16,7 @@ public class PaymentController {
   private final PaymentService paymentService;
 
   // ✅ 수강 중인 클래스 목록 조회
-  @GetMapping("/users/me/classes")
+  @GetMapping("users/me/classes")
   public ResponseEntity<List<EnrolledClassDto>> listEnrolledClasses(
       @RequestHeader("Authorization") String jwt) {
     List<EnrolledClassDto> result = paymentService.listEnrolledClasses(jwt);
@@ -24,7 +24,7 @@ public class PaymentController {
   }
 
  // 결제 내역 조회
-  @GetMapping("/users/me/payments")
+  @GetMapping("users/me/payments")
   public ResponseEntity<?> getGroupedPayments(
       @RequestHeader("Authorization") String jwt,
       @RequestParam(value = "payment_id", required = false) Long reservationId) {
@@ -39,7 +39,7 @@ public class PaymentController {
   }
 
   // ✅ 결제 취소 처리
-  @PostMapping("/users/payment/cancel")
+  @PostMapping("users/payment/cancel")
   public ResponseEntity<CancelPaymentResponseDto> cancelPayment(
       @RequestHeader("Authorization") String jwt,
       @RequestBody CancelPaymentRequestDto request) {
@@ -48,7 +48,7 @@ public class PaymentController {
   }
 
   // 결제 완료 처리 (장바구니 결제)
-  @PostMapping("/users/payment/cart/checkout")
+  @GetMapping("/payment/cart/checkout")
   public ResponseEntity<PaymentResponseDto> completePayment(
       @RequestParam("paymentKey") String paymentKey,
       @RequestParam("orderId")String orderId,

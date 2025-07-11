@@ -82,8 +82,8 @@ public class UserController {
     @PreAuthorize("hasRole('USER')")
     @PatchMapping("/users/{userId}")
     public ResponseEntity<UserResDto> updateUser(
-            @PathVariable Long userId,
-            @RequestBody UpdateUserReqDto updateUserReqDto) {
+        @PathVariable Long userId,
+        @RequestBody UpdateUserReqDto updateUserReqDto) {
         try {
             UserResDto updatedUser = userService.updateUserInfo(userId, updateUserReqDto);
             return ResponseEntity.ok(updatedUser);
@@ -101,7 +101,7 @@ public class UserController {
         return ResponseEntity.ok(userResDto);
     }
 
-//    @PreAuthorize("hasRole('USER')")
+    //    @PreAuthorize("hasRole('USER')")
 //    @GetMapping("/users/mypage/enrollments")
 //    public ResponseEntity<List<Enrollment>> getEnrollments(@AuthenticationPrincipal User user) {
 //        List<Enrollment> enrollments = userService.getCurrentEnrollments(user.getId());

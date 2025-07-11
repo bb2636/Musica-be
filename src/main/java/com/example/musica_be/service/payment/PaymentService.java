@@ -41,7 +41,7 @@ public class PaymentService {
   private final PaymentTypeRepository paymentTypeRepository;
 
   @Qualifier("tossWebClient")
-  WebClient tossWebClient;
+  private final WebClient tossWebClient;
 
   // 수강 중인 강의
   public List<EnrolledClassDto> listEnrolledClasses(String jwt) {
@@ -205,6 +205,10 @@ public class PaymentService {
       // 실패 응답 본문 로깅
       System.err.println("Toss 결제 승인 실패: " + e.getResponseBodyAsString());
       throw new RuntimeException("결제 승인 실패: " + e.getMessage());
+    }
+    if (dto.getStatus().equals( "DONE")  ||  dto.getMethod().equals("카드")){
+      dto.setStatus("PAID");
+      dto.setMethod("CARD");
     }
     // Payment 생성
     Payment payment = new Payment();

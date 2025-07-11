@@ -20,7 +20,7 @@ public class CartController {
     return cartService.getCartItemList(jwt);
   }
 
-  @PutMapping ()
+  @PutMapping
   public ResponseEntity<CartResponseDto> createCart(
       @RequestHeader("Authorization") String jwt,
       @RequestParam Long classId) {
