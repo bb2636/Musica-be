@@ -8,6 +8,8 @@ import lombok.Data;
 @Builder
 public class PaymentStatusUpdateRequestDto {
   private Long cart_id;
+  private String OrderId;
+  private int amount;
+  private String paymentKey;
   private String pay_method;
-  private String status_update_trigger;
 }

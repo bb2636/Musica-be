@@ -22,8 +22,8 @@ public class WishlistController {
     // 찜 추가
     @PostMapping("/classes/{classId}")
     public ResponseEntity<WishlistActionResponseDto> addWishlist(
-        @RequestHeader("Authorization") String jwt,
-        @PathVariable Long classId) {
+            @RequestHeader("Authorization") String jwt,
+            @PathVariable Long classId) {
         Long userId = JwtUtils.extractUserId(jwt);
         WishlistActionResponseDto response = wishlistService.addWishlist(userId, classId);
         return ResponseEntity.ok(response);
@@ -32,8 +32,8 @@ public class WishlistController {
     // 찜 삭제
     @DeleteMapping("/classes/{classId}")
     public ResponseEntity<WishlistActionResponseDto> deleteWishlist(
-        @RequestHeader("Authorization") String jwt,
-        @PathVariable Long classId) {
+            @RequestHeader("Authorization") String jwt,
+            @PathVariable Long classId) {
         Long userId = JwtUtils.extractUserId(jwt);
         WishlistActionResponseDto response = wishlistService.deleteWishlist(userId, classId);
         return ResponseEntity.ok(response);
@@ -42,7 +42,7 @@ public class WishlistController {
     // 찜 목록 조회(유저 개인용 - 마이페이지)
     @GetMapping("/mywishlist")
     public ResponseEntity<WishlistClassListResponseDto> getWishList(
-        @RequestHeader("Authorization") String jwt) {
+            @RequestHeader("Authorization") String jwt) {
         Long userId = JwtUtils.extractUserId(jwt);
         WishlistClassListResponseDto response = wishlistService.getWishlistClasses(userId);
         return ResponseEntity.ok(response);
