@@ -4,15 +4,15 @@ import com.example.musica_be.domain.cart.Cart;
 import com.example.musica_be.domain.cart.CartItem;
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.lecture.Lecture;
-import com.example.musica_be.domain.lecture.LectureViewLog;
+import com.example.musica_be.domain.lecture.LectureProgress;
 import com.example.musica_be.domain.payment.Payment;
 import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.domain.payment.PaymentStatus;
 import com.example.musica_be.dto.payment.*;
 import com.example.musica_be.repository.cart.CartItemRepository;
 import com.example.musica_be.repository.cart.CartRepository;
+import com.example.musica_be.repository.lecture.LectureProgressRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
-import com.example.musica_be.repository.lecture.LectureViewLogRepository;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
 import com.example.musica_be.repository.payment.PaymentRepository;
 import com.example.musica_be.repository.payment.PaymentStatusRepository;
@@ -37,7 +37,7 @@ public class PaymentService {
   private final CartItemRepository cartItemRepository;
   private final PaymentStatusRepository paymentStatusRepository;
   private final LectureRepository lectureRepository;
-  private final LectureViewLogRepository lectureViewLogRepository;
+  private final LectureProgressRepository lectureProgressRepository;
   private final PaymentTypeRepository paymentTypeRepository;
 
   @Qualifier("tossWebClient")
@@ -65,15 +65,14 @@ public class PaymentService {
 
       // 전체 강의 길이 (초 단위)
       int totalDuration = lectures.stream()
-          .mapToInt(lecture -> lecture.getProgress() != null ? lecture.getProgress() : 0)
+          .mapToInt(lecture -> lecture.getDuration() != null ? lecture.getDuration() : 0)
           .sum();
 
       // 유저의 시청 기록
-      List<LectureViewLog> logs = lectureViewLogRepository.findByUserIdAndLecture_Classes_Id(userId, classId);
-
+      List<LectureProgress> logs = lectureProgressRepository.findByUserIdAndLecture_Classes_Id(userId, classId);
       // 총 시청 시간
       int watchedSeconds = logs.stream()
-          .mapToInt(log -> log.getDuration_seconds().toSecondOfDay())
+          .mapToInt(LectureProgress::getWatchedSeconds)
           .sum();
 
       // 진도율 계산
@@ -280,8 +279,8 @@ public class PaymentService {
       }
 
       // 강의 시청 여부 체크 (3초 이상 시청 시 환불 불가)
-      List<LectureViewLog> logs = lectureViewLogRepository.findByUserIdAndLecture_Classes_Id(userId, item.getClasses().getId());
-      int watchedSeconds = logs.stream().mapToInt(LectureViewLog::getDurationSeconds).sum();
+      List<LectureProgress> logs = lectureProgressRepository.findByUserIdAndLecture_Classes_Id(userId, item.getClasses().getId());
+      int watchedSeconds = logs.stream().mapToInt(LectureProgress::getWatchedSeconds).sum();
 
       if (watchedSeconds >= 3) {
         throw new IllegalStateException("3초 이상 강의를 시청하여 취소(환불)가 불가능합니다.");
