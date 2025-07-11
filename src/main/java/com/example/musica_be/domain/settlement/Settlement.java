@@ -1,5 +1,7 @@
 package com.example.musica_be.domain.settlement;
 
+import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -11,15 +13,17 @@ public class Settlement {
   private Long id;
 
   @ManyToOne
-  @JoinColumn(name = "settlement_status_id", nullable = false)
-  private Settlement settlement_status_id;
+  @JoinColumn(name = "instructor_id", nullable = false)
+  private User user;
 
-  private Long instructor_id;
+  @ManyToOne
+  @JoinColumn(name= "class_id" , nullable = false)
+  private Classes classes;
+
   private Long total_amount;
   private Long commission_rate;
   private Long net_amount;
 
   private String settlement_month;
   private LocalDateTime settled_at;
-  private LocalDateTime created_at;
 }
