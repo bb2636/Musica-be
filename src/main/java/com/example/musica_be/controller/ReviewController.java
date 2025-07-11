@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/reviews")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ReviewController {
 
@@ -27,15 +27,15 @@ public class ReviewController {
     private User getUser(String jwt) {
         Long userId = JwtUtils.extractUserId(jwt);
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("유저 정보를 찾을 수 없습니다."));
+            .orElseThrow(() -> new IllegalArgumentException("유저 정보를 찾을 수 없습니다."));
     }
 
     // 리뷰 등록
-    @PostMapping
+    @PostMapping("/users/reviews")
     @Transactional
     public ResponseEntity<ReviewResponseDto> createReview(
-            @RequestHeader("Authorization") String jwt,
-            @RequestBody ReviewRequestDto requestDto) {
+        @RequestHeader("Authorization") String jwt,
+        @RequestBody ReviewRequestDto requestDto) {
 
         User user = getUser(jwt);
         ReviewResponseDto response = reviewService.createReview(user, requestDto);
@@ -43,42 +43,39 @@ public class ReviewController {
     }
 
     // 리뷰 수정
-    @PatchMapping("/{reviewId}")
+    @PatchMapping("/users/reviews/{reviewId}")
     public ResponseEntity<ReviewResponseDto> updateReview(
-            @RequestHeader("Authorization") String jwt,
-            @PathVariable Integer reviewId,
-            @RequestBody UpdateReviewDto dto) {
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Integer reviewId,
+        @RequestBody UpdateReviewDto dto) {
         User user = getUser(jwt);
         ReviewResponseDto response = reviewService.updateReview(user, reviewId, dto);
         return ResponseEntity.ok(response);
     }
 
     // 리뷰 삭제
-    @DeleteMapping("/{reviewId}")
+    @DeleteMapping("/users/reviews/{reviewId}")
     public ResponseEntity<ReviewResponseDto> deleteReview(
-            @RequestHeader("Authorization") String jwt,
-            @PathVariable Integer reviewId) {
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Integer reviewId) {
         User user = getUser(jwt);
         ReviewResponseDto response = reviewService.deleteReview(user, reviewId);
         return ResponseEntity.ok(response);
     }
 
-
-
-
     // 1. 유저 개인용 후기 목록 (마이페이지)
-    @GetMapping("/mypage")
+    @GetMapping("/users/reviews/mypage")
     public ResponseEntity<List<ReviewResponseDto>> getMyReviewss(
-            @RequestHeader("Authorization") String jwt) {
+        @RequestHeader("Authorization") String jwt) {
         User user = getUser(jwt);
         return ResponseEntity.ok(reviewService.getReviewsByUser(user));
     }
 
     // 2. 클래스별 후기 전체 조회 (공개)
-    @GetMapping("/classes/{classId}")
+    @GetMapping("/reviews/classes/{classId}")
     public ResponseEntity<List<ReviewResponseDto>> getClassReviews(
-            @PathVariable Long classId,
-            @RequestHeader(value = "Authorization", required = false) String jwt) {
+        @PathVariable Long classId,
+        @RequestHeader(value = "Authorization", required = false) String jwt) {
         Long userId = null;
         // Authorization 헤더가 있을 때만 시도 (없으면 로그인 안 한 상태로 간주)
         if(jwt != null && jwt.startsWith("Bearer ")) {
@@ -94,10 +91,10 @@ public class ReviewController {
     }
 
     // 3. 후기 단건 조회 (공개)
-    @GetMapping("/{reviewId}")
+    @GetMapping("/reviews/{reviewId}")
     public ResponseEntity<ReviewResponseDto> getReviewById(
-            @PathVariable Integer reviewId,
-            @RequestHeader(value = "Authorization", required = false) String jwt) {
+        @PathVariable Integer reviewId,
+        @RequestHeader(value = "Authorization", required = false) String jwt) {
         Long userId = null;
         if(jwt != null && jwt.startsWith("Bearer ")) {
             try {
@@ -110,7 +107,7 @@ public class ReviewController {
     }
 
     // 4. 특정 강의의 후기 요약 (AI 활용)
-    @GetMapping("/summary/lecture/{lectureId}")
+    @GetMapping("/reviews/summary/lecture/{lectureId}")
     public ResponseEntity<Map<String, String>> summarizeReviews(@PathVariable Long lectureId) {
         // 1. 강의에 대한 raw 댓글 모음
         String rawComments = reviewService.getRawCommentsByLecture(lectureId);
@@ -120,8 +117,8 @@ public class ReviewController {
 
         // 3. JSON 형태로 반환
         return ResponseEntity.ok(Map.of(
-                "lectureId", lectureId.toString(),
-                "summary", summary
+            "lectureId", lectureId.toString(),
+            "summary", summary
         ));
     }
 

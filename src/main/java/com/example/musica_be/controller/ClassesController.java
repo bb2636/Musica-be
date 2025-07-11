@@ -16,8 +16,8 @@ import java.util.Map;
 @RestController
 @RequiredArgsConstructor
 @Slf4j
-//@RequestMapping("/api/instructors/classes")
-@RequestMapping("/api/classes")
+@RequestMapping("/api/instructors/classes") // todo: 수정된 부분
+// @RequestMapping("/api/classes") // 원래 코드
 public class ClassesController {
 
     private final ClassesService classesService;
