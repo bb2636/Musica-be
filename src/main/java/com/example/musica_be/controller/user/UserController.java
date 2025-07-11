@@ -114,20 +114,20 @@ public class UserController {
 //        List<Payment> payments = userService.getPaymentHistory(user.getId());
 //        return ResponseEntity.ok(payments);
 //    }
-    //찜목록 조회
-    @PreAuthorize("hasRole('USER')")
-    @GetMapping("/users/mypage/wishlist")
-    public ResponseEntity<List<Wishlist>> getWishlist(@AuthenticationPrincipal User user) {
-        List<Wishlist> wishlist = userService.getWishlist(user.getId());
-        return ResponseEntity.ok(wishlist);
-    }
-    //후기 목록 조회
-    @PreAuthorize("hasRole('USER')")
-    @GetMapping("/users/mypage/reviews")
-    public ResponseEntity<List<Review>> getReviews(@AuthenticationPrincipal User user) {
-        List<Review> reviews = userService.getReviews(user.getId());
-        return ResponseEntity.ok(reviews);
-    }
+//    //찜목록 조회
+//    @PreAuthorize("hasRole('USER')")
+//    @GetMapping("/users/mypage/wishlist")
+//    public ResponseEntity<List<Wishlist>> getWishlist(@AuthenticationPrincipal User user) {
+//        List<Wishlist> wishlist = userService.getWishlist(user.getId());
+//        return ResponseEntity.ok(wishlist);
+//    }
+//    //후기 목록 조회
+//    @PreAuthorize("hasRole('USER')")
+//    @GetMapping("/users/mypage/reviews")
+//    public ResponseEntity<List<Review>> getReviews(@AuthenticationPrincipal User user) {
+//        List<Review> reviews = userService.getReviews(user.getId());
+//        return ResponseEntity.ok(reviews);
+//    }
 //
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/users/mypage/questions")

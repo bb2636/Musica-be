@@ -22,7 +22,7 @@ public class LectureController {
     private final LectureService lectureService;
 
     // 강의 등록
-    @PostMapping("/classes/{classId}/lectures")
+    @PostMapping("/instructor/classes/{classId}/lectures")
     public ResponseEntity<?> createLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId,
@@ -36,7 +36,7 @@ public class LectureController {
     }
 
     // 강의 수정
-    @PutMapping("/lectures/{lectureId}")
+    @PutMapping("/instructor/lectures/{lectureId}")
     public ResponseEntity<Void> updateLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId,
@@ -47,7 +47,7 @@ public class LectureController {
     }
 
     // 강의 삭제
-    @DeleteMapping("/lectures/{lectureId}")
+    @DeleteMapping("/instructor/lectures/{lectureId}")
     public ResponseEntity<Void> deleteLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId

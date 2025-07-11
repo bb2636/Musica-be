@@ -24,6 +24,12 @@ public class SecurityConfig {
     @Autowired
     private KakaoConfig kakaoConfig;
 
+    // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:36)
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    } // 여기까지 추가한 코드
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -32,18 +38,18 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return new InMemoryUserDetailsManager(
-            org.springframework.security.core.userdetails.User.withUsername("user")
-                .password(passwordEncoder().encode("password"))
-                .roles("USER")
-                .build(),
-            org.springframework.security.core.userdetails.User.withUsername("admin")
-                .password(passwordEncoder().encode("admin"))
-                .roles("ADMIN")
-                .build(),
-            org.springframework.security.core.userdetails.User.withUsername("instructor")
-                .password(passwordEncoder().encode("instructorPassword"))
-                .roles("INSTRUCTOR")
-                .build()
+                org.springframework.security.core.userdetails.User.withUsername("user")
+                        .password(passwordEncoder().encode("password"))
+                        .roles("USER")
+                        .build(),
+                org.springframework.security.core.userdetails.User.withUsername("admin")
+                        .password(passwordEncoder().encode("admin"))
+                        .roles("ADMIN")
+                        .build(),
+                org.springframework.security.core.userdetails.User.withUsername("instructor")
+                        .password(passwordEncoder().encode("instructorPassword"))
+                        .roles("INSTRUCTOR")
+                        .build()
         );
     }
 
@@ -63,17 +69,23 @@ public class SecurityConfig {
                         "/api/users/register",
                         "/api/auth/login",
                         "/api/admin/login",
-                        "/api/dev/**",
-                        "/api/reviews/summary/lecture/**",
-                        "/api/users/check-email",
-                        "/api/levels"
+                        "/api/dev/**", //개발용 임의 데이터 삽입 컨트롤러
+                        "/api/reviews/summary/lecture/**", //후기 요약 ai
+                        "/api/users/check-email", //회원가입 시 이메일 중복 체크
+                        "/api/levels", //회원가입 시 레벨 테이블 불러오기
+                        "/api/reviews/classes/**" //클래스 별 후기 전체 조회
                 ).permitAll()
-                .requestMatchers("/api/**").hasRole("USER")
-                .requestMatchers("/admin/**").hasRole("ADMIN")
-                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR")
+                // URL 경로를 역할별로 나눔 // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+                .requestMatchers("/api/users/**","/api/auth/**").hasRole("USER") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+                .requestMatchers("/api/instructors/**").hasRole("INSTRUCTOR") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+                .requestMatchers("/api/admins/**").hasRole("ADMIN") // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
+//                .requestMatchers("/api/**").hasRole("USER") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
+//                .requestMatchers("/admin/**").hasRole("ADMIN") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
+//                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
                 .anyRequest().authenticated()
                 .and()
-                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(new JwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class); // 원래 코드
+//                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class); // todo: 수정한 코드 - 강동균 (2025. 07. 10. 23:35) → 빈 주입 방식
 
         // .oauth2Login() 설정은 개발 중엔 주석처리
         return http.build();

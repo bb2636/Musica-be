@@ -22,7 +22,7 @@ public class QnaController {
     private final QnaService qnaService;
 
     // 질문 등록
-    @PostMapping("/questions")
+    @PostMapping("/users/questions")
     public ResponseEntity<CreateQuestionResDto> createQuestion(
             @RequestHeader("Authorization") String jwt,
             @RequestBody CreateQuestionReqDto request) {
@@ -31,7 +31,7 @@ public class QnaController {
     }
 
     // 질문 수정
-    @PutMapping("/questions/{questionId}")
+    @PutMapping("/users/questions/{questionId}")
     public ResponseEntity<Void> updateQuestion(
             @RequestHeader("Authorization") String jwt,
             @PathVariable Long questionId,
@@ -42,7 +42,7 @@ public class QnaController {
     }
 
     // 질문 삭제
-    @DeleteMapping("/questions/{questionId}")
+    @DeleteMapping("/users/questions/{questionId}")
     public ResponseEntity<Void> deleteQuestion(
             @RequestHeader("Authorization") String jwt,
             @PathVariable Long questionId) throws Exception {
@@ -59,7 +59,7 @@ public class QnaController {
     }
 
     // 답변 등록 (강사만)
-    @PostMapping("/answers")
+    @PostMapping("/instructors/answers")
     public ResponseEntity<CreateAnswerResDto> createAnswer(
             @RequestHeader("Authorization") String jwt,
             @RequestBody CreateAnswerReqDto request) throws Exception {

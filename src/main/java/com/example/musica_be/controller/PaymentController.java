@@ -39,7 +39,7 @@ public class PaymentController {
   }
 
   // ✅ 결제 취소 처리
-  @PostMapping("/payment/cancel")
+  @PostMapping("/users/payment/cancel")
   public ResponseEntity<CancelPaymentResponseDto> cancelPayment(
       @RequestHeader("Authorization") String jwt,
       @RequestBody CancelPaymentRequestDto request) {
@@ -48,7 +48,7 @@ public class PaymentController {
   }
 
   // 결제 완료 처리 (장바구니 결제)
-  @PostMapping("/payment/cart/checkout")
+  @PostMapping("/users/payment/cart/checkout")
   public ResponseEntity<PaymentResponseDto> completePayment(
       @RequestParam("paymentKey") String paymentKey,
       @RequestParam("orderId")String orderId,
