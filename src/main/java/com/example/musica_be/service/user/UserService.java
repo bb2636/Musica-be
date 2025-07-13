@@ -239,4 +239,8 @@ public class UserService {
                         .build())
                 .toList();
     }
+    public Level getLevelById(Long id) {
+        return levelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("기본 레벨을 찾을 수 없습니다."));
+    }
 }
