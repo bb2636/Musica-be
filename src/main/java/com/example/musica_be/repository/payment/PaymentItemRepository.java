@@ -54,4 +54,11 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
       nativeQuery = true)
   List<Object[]> findMonthlyRevenueByClassAndYear(@Param("classId") Long classId,
                                                   @Param("year") int year);
+  @Query("SELECT pi FROM PaymentItem pi " +
+          "JOIN pi.payment p " +
+          "WHERE p.status = 'DONE' " +
+          "AND FUNCTION('YEAR', p.paid_at) = :year " +
+          "AND FUNCTION('MONTH', p.paid_at) = :month")
+
+  List<PaymentItem> findDonePaymentsInMonth(int year, int monthValue);
 }

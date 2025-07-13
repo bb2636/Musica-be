@@ -1,6 +1,9 @@
 package com.example.musica_be.repository.settlement;
 
+import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.domain.settlement.Settlement;
+import com.example.musica_be.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,4 +37,6 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
         """, nativeQuery = true)
   List<Object[]> findMonthlySalesByClassAndYear(@Param("classId") Long classId,
                                                 @Param("year") int year);
+
+  boolean existsByUserAndClassesAndSettlementMonth(User user, Classes classes, String settlementMonth);
 }
