@@ -27,4 +27,8 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     Optional<Review> findByReviewIdAndUser(Integer reviewId, User user); // 본인 확인용
 
     List<Review> findByUserId(Long userId);
+
+    // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.classes.id = :classId")
+    Optional<Double> calculateAverageRatingByClassId(@Param("classId") Long classId);
 }
