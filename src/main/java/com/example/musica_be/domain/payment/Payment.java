@@ -30,7 +30,7 @@ public class Payment {
   private PaymentStatus status;
 
   private int amount;
-  private String payment_method;
-  private LocalDateTime paid_at;
-  private LocalDateTime created_at;
+  private String paymentMethod;
+  private LocalDateTime paidAt;
+  private LocalDateTime createdAt;
 }

@@ -14,6 +14,7 @@ import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.repository.qna.QuestionRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
+import com.example.musica_be.repository.user.RefreshTokenRepository;
 import com.example.musica_be.repository.user.SocialAccountRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.repository.wishlist.WishlistRepository;
@@ -38,6 +39,7 @@ public class UserService {
     private final WishlistRepository wishlistRepository;
     private final ReviewRepository reviewRepository;
     private final QuestionRepository questionRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 이메일로 사용자 찾기
     public Optional<User> findByEmail(String email) {
@@ -109,38 +111,48 @@ public class UserService {
 
     // OAuth2 로그인 후 받은 정보로 회원가입 처리
     public UserResDto registerUserFromOAuth(String email, String name, String role, Long levelId) {
-        if ("USER".equals(role) && levelId == null) {
-            throw new IllegalArgumentException("Level must be selected for users.");
-        }
-
         Level level = null;
-        if ("USER".equals(role)) {
+
+        // levelId 못받으면 자동으로 1L
+        try {
             level = levelRepository.findById(levelId)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid level ID"));
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid levelId"));
+        } catch (Exception e) {
+            level = levelRepository.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Default level not found"));
         }
 
-        // 이미 존재하는 사용자 체크
+        Role userRole;
+        try {
+            userRole = Role.valueOf(role);
+        } catch (Exception e) {
+            userRole = Role.USER;
+        }
+
+        // 이미 존재하면 그대로 반환
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
-            return new UserResDto(existingUser.get()); // 기존 사용자 반환
+            return new UserResDto(existingUser.get());
         }
 
-        // 새로운 사용자 생성
         User user = new User();
         user.setEmail(email);
         user.setName(name);
-        user.setRole(Role.valueOf(role)); // USER 또는 INSTRUCTOR
+        user.setRole(userRole);
         user.setCreatedAt(LocalDateTime.now());
         user.setIsApproved(true);
 
-        // USER인 경우만 level을 설정
-        if ("USER".equals(role)) {
+        // ✅ 소셜 회원가입이므로 더미 비밀번호 입력
+        user.setPassword("social_login");
+
+        if (userRole == Role.USER) {
             user.setLevel(level);
         }
 
-        userRepository.save(user); // DB에 저장
-        return new UserResDto(user); // UserResDto로 변환하여 응답
+        userRepository.save(user);
+        return new UserResDto(user);
     }
+
 
     // 로그인
     public Map<String, String> login(LoginReqDto loginReqDto) {
@@ -150,9 +162,19 @@ public class UserService {
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
                 // 로그인 성공, JWT 토큰 생성
-                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
-                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());  // role 추가
-
+                String accessToken = JwtUtils.generateAccessToken(
+                        user.getEmail(),
+                        String.valueOf(user.getId()),
+                        user.getRole().name(),
+                        user.getName()
+                );
+                String refreshToken = JwtUtils.generateRefreshToken(
+                        user.getEmail(),
+                        String.valueOf(user.getId()),
+                        user.getRole().name(),
+                        user.getName()
+                );
+                // 토큰을 반환
                 return Map.of(
                         "accessToken", accessToken,
                         "refreshToken", refreshToken
@@ -163,6 +185,14 @@ public class UserService {
         } else {
             throw new IllegalArgumentException("User not found");
         }
+    }
+    //로그아웃 시 리프레시 토큰 삭제
+    public void deleteByUserId(Long userId) {
+        refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    public boolean existsByRefreshToken(String refreshToken) {
+        return refreshTokenRepository.findByRefreshToken(refreshToken) != null;
     }
 
     // 회원 탈퇴
@@ -238,5 +268,9 @@ public class UserService {
                         .createdAt(question.getCreatedAt())
                         .build())
                 .toList();
+    }
+    public Level getLevelById(Long id) {
+        return levelRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("기본 레벨을 찾을 수 없습니다."));
     }
 }

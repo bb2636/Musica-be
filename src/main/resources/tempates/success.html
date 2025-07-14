@@ -1,0 +1,21 @@
+<!-- /success.html -->
+<script>
+    const params = new URLSearchParams(window.location.search);
+    const cartId = params.get("cartId");
+    const orderId = params.get("orderId");
+    const paymentKey = params.get("paymentKey");
+    const amount = params.get("amount");
+
+    fetch(`/api/payment/cart/checkout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cartId, orderId, paymentKey, amount })
+    })
+        .then(res => res.json())
+        .then(data => {
+            document.body.innerHTML = "<h1>결제 완료</h1><p>감사합니다!</p>";
+        })
+        .catch(err => {
+            document.body.innerHTML = "<h1>결제 실패</h1><p>잠시 후 다시 시도해주세요.</p>";
+        });
+</script>

@@ -33,6 +33,10 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))
     FROM Review r
     GROUP BY r.classes.id
-""")
+    """)
     List<ClassesRatingAvgDto> getAverageRatingsByClassIds(List<Long> classIds);
+
+    // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
+    @Query("SELECT AVG(r.rating) FROM Review r WHERE r.classes.id = :classId")
+    Optional<Double> calculateAverageRatingByClassId(@Param("classId") Long classId);
 }

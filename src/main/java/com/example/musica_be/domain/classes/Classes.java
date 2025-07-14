@@ -54,13 +54,18 @@ public class Classes {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
-    public void update(String title, String descriptionHtml, Category category, Level difficulty, String thumbnailUrl, Integer classPrice) {
+    @Column(name = "is_recommended", nullable = false)
+    @Builder.Default
+    private Boolean isRecommended = false;
+
+    public void update(String title, String descriptionHtml, Category category, Level difficulty, String thumbnailUrl, Integer classPrice, Boolean isRecommended) {
         this.title = title;
         this.descriptionHtml = descriptionHtml;
         this.category = category;
         this.difficulty = difficulty;
         this.thumbnailUrl = thumbnailUrl;
         this.classPrice = classPrice;
+        this.isRecommended = isRecommended;
     }
 }
 

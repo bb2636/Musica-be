@@ -1,6 +1,5 @@
 package com.example.musica_be.domain.settlement;
 
-import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -12,26 +11,21 @@ import java.time.LocalDateTime;
 
 @Entity
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
-public class Settlement {
+public class InstructorAccount {
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
-  private Long id;
-
-  @ManyToOne
+  Long id;
+  @OneToOne
   @JoinColumn(name = "instructor_id", nullable = false)
-  private User user;
+  User user;
 
-  @ManyToOne
-  @JoinColumn(name= "class_id" , nullable = false)
-  private Classes classes;
+  String bankName;
+  String accountNumber;
+  String accountHolderName;
 
-  private Long totalAmount;
-  private Long commissionRate;
-  private Long netAmount;
-
-  private String settlementMonth;
-  private LocalDateTime settledAt;
+  LocalDateTime createdAt;
 }

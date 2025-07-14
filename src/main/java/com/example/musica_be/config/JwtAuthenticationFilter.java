@@ -1,5 +1,6 @@
 package com.example.musica_be.config;
 
+import com.example.musica_be.service.user.BlacklistService;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,6 +24,7 @@ import java.util.List;
 @Component
 @Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private BlacklistService blacklistService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -54,6 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 //            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid Token");
 //            return;
 //        }
+        // ✅ 블랙리스트에 있는지 체크
+        if (blacklistService.isBlacklisted(token)) {
+            log.warn("Access token is blacklisted: {}", token);
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "This token is blacklisted.");
+            return;
+        }
 
         // todo: 추가한 코드 - 강동균 (2025. 07. 10. 23:07)
         // todo: 권한 기반 인증에서는 이 코드를 사용해야 함 (403 에러 발생)

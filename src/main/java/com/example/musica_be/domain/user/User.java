@@ -3,6 +3,8 @@ package com.example.musica_be.domain.user;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -39,6 +41,10 @@ public class User {
     // 추가된 `isApproved` 필드의 setter와 getter 메서드
     @Column(nullable = false)
     private boolean isApproved;  // 승인 여부 필드 추가
+
+    // ✅ 추가: 소셜 계정 연관관계
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<SocialAccount> socialAccounts = new ArrayList<>();
 
     // 생성자 추가: 이메일, 이름, 역할, 생성일시, 비밀번호를 받아서 객체 생성
     public User(String email, String name, Role role, LocalDateTime createdAt, String password) {
