@@ -339,6 +339,7 @@ public class ClassesService {
             .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 존재하지 않습니다."));
 
         classes.setViewCount(classes.getViewCount() + 1);
+    }
 
     // 추천 클래스 조회 (1순위 관리자지정, 2순위 최신순)
     @Transactional(readOnly = true)
