@@ -16,4 +16,7 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
 
     // 추천이 아닌 클래스 중 최신순 (isRecommended = false)
     List<Classes> findByIsRecommendedFalseOrderByCreatedAtDesc();
+
+    // 최신 클래스(16 limit 정렬)
+    List<Classes> findTop16ByOrderByCreatedAtDesc();
 }

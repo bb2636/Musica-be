@@ -8,9 +8,11 @@ import com.example.musica_be.dto.classes.*;
 import com.example.musica_be.repository.classes.CategoryRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
+import com.example.musica_be.repository.payment.PaymentItemRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,6 +34,8 @@ public class ClassesService {
     private final LectureRepository lectureRepository;
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
+    private final PaymentItemRepository paymentItemRepository;
+    private final WishlistRepository wishlistRepository;
 
     // 클래스 등록
     @Transactional
@@ -187,6 +192,52 @@ public class ClassesService {
     // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
     private double calculateAvgRating(Long classId) {
         return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
+    }
+
+    // Popularity 점수 기반 인기 클래스 조회
+    @Transactional(readOnly = true)
+    public List<ClassCardDto> getPopularClasses() {
+        List<Classes> allClasses = classesRepository.findAll();
+
+        List<ClassPopularityDto> scoredList = allClasses.stream().map(classes -> {
+            int orderCount = paymentItemRepository.countByClasses(classes); // 결제 수
+            int wishlistCount = wishlistRepository.countByClasses(classes); // 찜 수
+            int score = (orderCount * 2) + wishlistCount;
+
+            return new ClassPopularityDto(classes, score);
+        }).collect(Collectors.toList());
+
+        // 점수 내림차순, 같으면 createdAt 내림차순
+        scoredList.sort((a, b) -> {
+            int cmp = Integer.compare(b.getScore(), a.getScore());
+            if(cmp == 0) {
+                return b.getClasses().getCreatedAt().compareTo(a.getClasses().getCreatedAt());
+            }
+            return cmp;
+        });
+
+        // 별점 포함 ClassCardDto로 변환, 상위 16개
+        return scoredList.stream()
+                .limit(16)
+                .map(dto -> {
+                    Classes cls = dto.getClasses();
+                    double rating = calculateAvgRating(cls.getId());
+                    return ClassCardDto.from(cls, rating);
+                })
+                .collect(Collectors.toList());
+    }
+
+    // 최신 클래스 (16개 limit)
+    @Transactional(readOnly = true)
+    public List<ClassCardDto> getLatestClasses() {
+        List<Classes> latestClasses = classesRepository.findTop16ByOrderByCreatedAtDesc();
+
+        return latestClasses.stream()
+                .map(cls -> {
+                    double rating = calculateAvgRating(cls.getId());
+                    return ClassCardDto.from(cls, rating);
+                })
+                .collect(Collectors.toList());
     }
 
 }

@@ -24,4 +24,16 @@ public class MainPageController {
         return ResponseEntity.ok(classesService.getRecommendedClasses(jwt));
     }
 
+    // 인기 클래스 조회
+    @GetMapping("/popular")
+    public ResponseEntity<List<ClassCardDto>> getPopularClasses() {
+        return ResponseEntity.ok(classesService.getPopularClasses());
+    }
+
+    // 최신 클래스 조회
+    @GetMapping("/latest")
+    public ResponseEntity<List<ClassCardDto>> getLatestClasses() {
+        return ResponseEntity.ok(classesService.getLatestClasses());
+    }
+
 }
