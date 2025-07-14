@@ -41,31 +41,40 @@ public class AdminService {
     public Map<String, String> adminLogin(LoginReqDto loginReqDto) {
         Optional<User> userOpt = userRepository.findByEmail(loginReqDto.getEmail());
 
-        if (userOpt.isPresent()) {
-            User user = userOpt.get();
-
-            // 관리자가 아닌 경우 로그인 불가
-            if (user.getRole() != Role.ADMIN) {
-                throw new IllegalArgumentException("Only admin can log in");
-            }
-
-            // 비밀번호 검증
-            if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
-                // 로그인 성공, JWT 토큰 생성
-                String accessToken = JwtUtils.generateAccessToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());
-                String refreshToken = JwtUtils.generateRefreshToken(user.getEmail(), String.valueOf(user.getId()), user.getRole().name());
-
-                // 토큰을 반환
-                Map<String, String> tokens = new HashMap<>();
-                tokens.put("accessToken", accessToken);
-                tokens.put("refreshToken", refreshToken);
-                return tokens;
-            } else {
-                throw new IllegalArgumentException("Invalid password");
-            }
-        } else {
+        if (userOpt.isEmpty()) {
             throw new IllegalArgumentException("User not found");
         }
+
+        User user = userOpt.get();
+
+        // 관리자가 아닌 경우 로그인 불가
+        if (user.getRole() != Role.ADMIN) {
+            throw new IllegalArgumentException("Only admin can log in");
+        }
+
+        // 비밀번호 검증
+        if (!passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
+            throw new IllegalArgumentException("Invalid password");
+        }
+
+        // 로그인 성공, JWT 토큰 생성
+        String accessToken = JwtUtils.generateAccessToken(
+                user.getEmail(),
+                String.valueOf(user.getId()),
+                user.getRole().name(),
+                user.getName()
+        );
+        String refreshToken = JwtUtils.generateRefreshToken(
+                user.getEmail(),
+                String.valueOf(user.getId()),
+                user.getRole().name(),
+                user.getName()
+        );
+
+        return Map.of(
+                "accessToken", accessToken,
+                "refreshToken", refreshToken
+        );
     }
 
 

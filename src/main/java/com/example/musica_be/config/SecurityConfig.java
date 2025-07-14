@@ -1,5 +1,6 @@
 package com.example.musica_be.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -74,6 +75,7 @@ public class SecurityConfig {
                         "/api/users/register",
                         "/api/auth/login",
                         "/api/admin/login",
+                        "/api/users/**",
                         "/api/dev/**", //개발용 임의 데이터 삽입 컨트롤러
                         "/api/reviews/summary/lecture/**", //후기 요약 ai
                         "/api/users/check-email", //회원가입 시 이메일 중복 체크
@@ -84,7 +86,8 @@ public class SecurityConfig {
                         "/login/oauth2/**", //리다이렉션 url 허용
                         "/oauth-success", // 프론트 리디렉션 용
                         "/api/user/signup", //카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
-                        "/api/payment/cart/checkout"// 카트 결제 (토스 결제를 위한)
+                        "/api/payment/cart/checkout", // 카트 결제 (토스 결제를 위한)
+                        "/api/main/**" // 메인페이지 (추천,인기,최신,후기요약 ai 등등)
 
                 ).permitAll()
                 // URL 경로를 역할별로 나눔 // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
@@ -95,6 +98,13 @@ public class SecurityConfig {
 //                .requestMatchers("/admin/**").hasRole("ADMIN") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
 //                .requestMatchers("/instructor/**").hasRole("INSTRUCTOR") // todo: 주석 처리 - 강동균 (2025. 07. 11. 00:01)
                 .anyRequest().authenticated()
+                )
+                //인증 필요없는 요청 보낼 때 카카오 리디렉션 막기
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.getWriter().write("Unauthorized: Please provide valid JWT token");
+                        })
                 )
                 // ✅ JWT 인증 필터 등록 (세션 방식과 독립적으로 작동)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)

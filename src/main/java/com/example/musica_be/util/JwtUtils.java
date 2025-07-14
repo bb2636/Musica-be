@@ -3,6 +3,7 @@ package com.example.musica_be.util;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 
+import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
@@ -21,16 +22,14 @@ public class JwtUtils {
     }
   }
 
-  public static String generateAccessToken(String email, String userId, String role) {
-    return generateAccessToken(email, userId, role, "");
-  }
-
   public static String generateAccessToken(String email, String userId, String role, String name) {
+    // UTF-8 safe
+    String safeName = new String(name.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
     return Jwts.builder()
             .setSubject(userId)
             .claim("email", email)
             .claim("role", role)
-            .claim("name", name)
+            .claim("name", safeName)
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + ACCESS_TOKEN_EXPIRATION_TIME))
             .signWith(SECRET_KEY, SignatureAlgorithm.HS512)
@@ -77,12 +76,13 @@ public class JwtUtils {
             .get("name", String.class);
   }
 
-  public static String generateRefreshToken(String email, String userId, String role) {
-    long refreshExpiration = 7 * 24 * 3600_000;
+  public static String generateRefreshToken(String email, String userId, String role, String name) {
+    long refreshExpiration = 7 * 24 * 3600_000; //7일
     return Jwts.builder()
             .setSubject(userId)
             .claim("email", email)
             .claim("role", role)
+            .claim("name", name)
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
             .signWith(SECRET_KEY, SignatureAlgorithm.HS512)

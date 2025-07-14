@@ -16,7 +16,7 @@ public class SocialAuthController {
 
     // ✅ 카카오 로그인 이후 추가 정보 등록 (role + levelId)
     @PostMapping("/user/signup")
-    public ResponseEntity<UserResDto> completeSignup(@RequestBody SocialSignupReqDto dto) {
+    public ResponseEntity<UserResDto> kakaoSignup(@RequestBody SocialSignupReqDto dto) {
         try {
             UserResDto userResDto = userService.registerUserFromOAuth(
                     dto.getEmail(),
