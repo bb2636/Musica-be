@@ -30,8 +30,8 @@ public class SettlementScheduler {
     private final PaymentItemRepository paymentItemRepository;
     private final SettlementRepository settlementRepository;
 
-    // 매월 1일 새벽 00:10 실행
-    @Scheduled(cron = "0 10 0 1 * *")
+    // 매월 25일 새벽 00:010 실행
+    @Scheduled(cron = "0 10 0 25 * *")
     public void generateMonthlySettlements() {
         log.info("🧾 [SettlementScheduler] Started monthly settlement generation");
 
@@ -56,25 +56,25 @@ public class SettlementScheduler {
             User instructor = clazz.getInstructor();
 
             long totalAmount = groupItems.stream()
-                    .mapToLong(item -> item.getAmount())  // int → long
-                    .sum();
+                .mapToLong(PaymentItem::getAmount)
+                .sum();
 
-            Long commissionRate = 20L; // 20%
-            Long netAmount = totalAmount * (100 - commissionRate) / 100;
+            // 정산 비율: 강사 6 / 10 → 60%
+            long netAmount = totalAmount * 6 / 10;
+            long commissionRate = 40L; // 40% 수수료
 
-            // 중복 방지
             boolean exists = settlementRepository.existsByUserAndClassesAndSettlementMonth(instructor, clazz, settlementMonth);
             if (exists) continue;
 
             Settlement settlement = Settlement.builder()
-                    .user(instructor)
-                    .classes(clazz)
-                    .totalAmount(totalAmount)
-                    .commissionRate(commissionRate)
-                    .netAmount(netAmount)
-                    .settlementMonth(settlementMonth)
-                    .settledAt(LocalDateTime.now())
-                    .build();
+                .user(instructor)
+                .classes(clazz)
+                .totalAmount(totalAmount)
+                .commissionRate(commissionRate)
+                .netAmount(netAmount)
+                .settlementMonth(settlementMonth)
+                .settledAt(LocalDateTime.now())
+                .build();
 
             settlements.add(settlement);
         }

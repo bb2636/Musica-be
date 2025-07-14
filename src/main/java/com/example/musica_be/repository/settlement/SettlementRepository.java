@@ -15,7 +15,7 @@ public interface SettlementRepository extends JpaRepository<Settlement, Long> {
   @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Settlement s WHERE s.user = :instructorId")
   Long sumTotalAmountByInstructorId(@Param("instructorId") Long instructorId);
 
-  @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Settlement s WHERE s.classes = :classId")
+  @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Settlement s WHERE s.classes.id = :classId")
   Long sumTotalAmountByClassId(@Param("classId") Long classId);
 
   @Query("SELECT FUNCTION('MONTH', s.settledAt) AS month, COALESCE(SUM(s.totalAmount), 0) " +

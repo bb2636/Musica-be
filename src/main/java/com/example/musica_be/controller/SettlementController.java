@@ -63,7 +63,7 @@ public class SettlementController {
   }
 
   // ✅ 강사의 월별 매출 (년 기준)
-  @GetMapping("/statistics/revenue")
+  @GetMapping("/statistics/year/revenue")
   public ResponseEntity<List<MonthlyRevenueDto>> getMonthlySalesByInstructor(
       @RequestHeader("Authorization") String jwt,
       @RequestParam int year) {
@@ -71,7 +71,7 @@ public class SettlementController {
   }
 
   // ✅ 강사의 클래스별 월별 매출 (년 기준)
-  @GetMapping("/statistics/revenue")
+  @GetMapping("/classes/statistics/year/revenue")
   public ResponseEntity<List<MonthlyRevenueDto>> getMonthlySalesByClass(
       @RequestHeader("Authorization") String jwt,
       @RequestParam int year) {
