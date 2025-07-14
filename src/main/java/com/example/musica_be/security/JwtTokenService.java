@@ -17,9 +17,9 @@ public class JwtTokenService {
     }
 
     // 액세스 토큰 발급
-    public String generateAccessToken(String email, String userId, String role) {
+    public String generateAccessToken(String email, String userId, String role, String name) {
         try {
-            return JwtUtils.generateAccessToken(email, userId, role);
+            return JwtUtils.generateAccessToken(email, userId, role, name);
         } catch (Exception e) {
             // Add proper error handling here
             throw new RuntimeException("Error generating access token", e);
@@ -27,9 +27,9 @@ public class JwtTokenService {
     }
 
     // 리프레시 토큰 발급
-    public String generateRefreshToken(String email, String userId, String role) {
+    public String generateRefreshToken(String email, String userId, String role, String name) {
         try {
-            return JwtUtils.generateRefreshToken(email, userId, role);
+            return JwtUtils.generateRefreshToken(email, userId, role, name);
         } catch (Exception e) {
             // Add proper error handling here
             throw new RuntimeException("Error generating refresh token", e);
