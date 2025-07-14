@@ -69,11 +69,11 @@ public class SettlementScheduler {
             Settlement settlement = Settlement.builder()
                     .user(instructor)
                     .classes(clazz)
-                    .total_amount(totalAmount)
-                    .commission_rate(commissionRate)
-                    .net_amount(netAmount)
-                    .settlement_month(settlementMonth)
-                    .settled_at(LocalDateTime.now())
+                    .totalAmount(totalAmount)
+                    .commissionRate(commissionRate)
+                    .netAmount(netAmount)
+                    .settlementMonth(settlementMonth)
+                    .settledAt(LocalDateTime.now())
                     .build();
 
             settlements.add(settlement);

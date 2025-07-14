@@ -28,10 +28,10 @@ public class Settlement {
   @JoinColumn(name= "class_id" , nullable = false)
   private Classes classes;
 
-  private Long total_amount;
-  private Long commission_rate;
-  private Long net_amount;
+  private Long totalAmount;
+  private Long commissionRate;
+  private Long netAmount;
 
-  private String settlement_month;
-  private LocalDateTime settled_at;
+  private String settlementMonth;
+  private LocalDateTime settledAt;
 }

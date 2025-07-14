@@ -1,12 +1,11 @@
 package com.example.musica_be.service.settlement;
 
+
 import com.example.musica_be.domain.settlement.InstructorAccount;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.settlement.request.AccountRequestDto;
 import com.example.musica_be.dto.settlement.response.AccountResponseDto;
 import com.example.musica_be.dto.settlement.response.MonthlyRevenueDto;
-import com.example.musica_be.repository.classes.ClassesRepository;
-import com.example.musica_be.repository.payment.PaymentItemRepository;
 import com.example.musica_be.repository.settlement.InstructorAccountRepository;
 import com.example.musica_be.repository.settlement.SettlementRepository;
 import com.example.musica_be.repository.user.UserRepository;
@@ -23,8 +22,6 @@ import java.util.List;
 public class SettlementService {
   private final InstructorAccountRepository instructorAccountRepository;
   private final UserRepository userRepository;
-  private final PaymentItemRepository paymentItemRepository;
-  private final ClassesRepository classesRepository;
   private final SettlementRepository settlementRepository;
 
   public AccountResponseDto settlementAdd(String jwt, AccountRequestDto accountRequestDto) {
@@ -34,18 +31,18 @@ public class SettlementService {
 
     InstructorAccount instructorAccount = InstructorAccount.builder()
         .user(instructor)
-        .bank_name(accountRequestDto.getBankName())
-        .account_number(accountRequestDto.getAccountNumber())
-        .account_holder_name(accountRequestDto.getAccountHolder())
-        .created_at(LocalDateTime.now())
+        .bankName(accountRequestDto.getBankName())
+        .accountNumber(accountRequestDto.getAccountNumber())
+        .accountHolderName(accountRequestDto.getAccountHolder())
+        .createdAt(LocalDateTime.now())
         .build();
 
     InstructorAccount saved = instructorAccountRepository.save(instructorAccount);
 
     return AccountResponseDto.builder()
-        .bankName(saved.getBank_name())
-        .accountNumber(saved.getAccount_number())
-        .account_holder(saved.getAccount_holder_name())
+        .bankName(saved.getBankName())
+        .accountNumber(saved.getAccountNumber())
+        .account_holder(saved.getAccountHolderName())
         .build();
   }
 
@@ -59,16 +56,16 @@ public class SettlementService {
         .orElseThrow(() -> new IllegalStateException("정산 계좌가 등록되어 있지 않습니다."));
 
     // 정보 수정
-    instructorAccount.setBank_name(accountRequestDto.getBankName());
-    instructorAccount.setAccount_number(accountRequestDto.getAccountNumber());
-    instructorAccount.setAccount_holder_name(accountRequestDto.getAccountHolder());
+    instructorAccount.setBankName(accountRequestDto.getBankName());
+    instructorAccount.setAccountNumber(accountRequestDto.getAccountNumber());
+    instructorAccount.setAccountHolderName(accountRequestDto.getAccountHolder());
 
     InstructorAccount updated = instructorAccountRepository.save(instructorAccount);
 
     return AccountResponseDto.builder()
-        .bankName(updated.getBank_name())
-        .accountNumber(updated.getAccount_number())
-        .account_holder(updated.getAccount_holder_name())
+        .bankName(updated.getBankName())
+        .accountNumber(updated.getAccountNumber())
+        .account_holder(updated.getAccountHolderName())
         .build();
   }
 
@@ -94,9 +91,9 @@ public class SettlementService {
         .orElseThrow(() -> new IllegalStateException("정산 계좌가 등록되어 있지 않습니다."));
 
     return AccountResponseDto.builder()
-        .bankName(instructorAccount.getBank_name())
-        .accountNumber(instructorAccount.getAccount_number())
-        .account_holder(instructorAccount.getAccount_holder_name())
+        .bankName(instructorAccount.getBankName())
+        .accountNumber(instructorAccount.getAccountNumber())
+        .account_holder(instructorAccount.getAccountHolderName())
         .build();
   }
 

@@ -12,18 +12,18 @@ import java.util.List;
 
 public interface SettlementRepository extends JpaRepository<Settlement, Long> {
 
-  @Query("SELECT COALESCE(SUM(s.total_amount), 0) FROM Settlement s WHERE s.user = :instructorId")
+  @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Settlement s WHERE s.user = :instructorId")
   Long sumTotalAmountByInstructorId(@Param("instructorId") Long instructorId);
 
-  @Query("SELECT COALESCE(SUM(s.total_amount), 0) FROM Settlement s WHERE s.classes = :classId")
+  @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Settlement s WHERE s.classes = :classId")
   Long sumTotalAmountByClassId(@Param("classId") Long classId);
 
-  @Query("SELECT FUNCTION('MONTH', s.settled_at) AS month, COALESCE(SUM(s.total_amount), 0) " +
+  @Query("SELECT FUNCTION('MONTH', s.settledAt) AS month, COALESCE(SUM(s.totalAmount), 0) " +
       "FROM Settlement s " +
       "WHERE s.classes.instructor.id = :instructorId " +
-      "AND FUNCTION('YEAR', s.settled_at) = :year " +
-      "GROUP BY FUNCTION('MONTH', s.settled_at) " +
-      "ORDER BY FUNCTION('MONTH', s.settled_at)")
+      "AND FUNCTION('YEAR', s.settledAt) = :year " +
+      "GROUP BY FUNCTION('MONTH', s.settledAt) " +
+      "ORDER BY FUNCTION('MONTH', s.settledAt)")
   List<Object[]> findMonthlySalesByInstructorAndYear(@Param("instructorId") Long instructorId,
                                                      @Param("year") int year);
 

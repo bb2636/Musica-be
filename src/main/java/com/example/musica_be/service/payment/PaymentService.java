@@ -87,7 +87,7 @@ public class PaymentService {
           clazz.getInstructor().getName(),
           payment.getAmount(),
           progressPercent,
-          payment.getPaid_at()
+          payment.getPaidAt()
       );
 
       enrolledClasses.add(dto);
@@ -117,7 +117,7 @@ public class PaymentService {
       }
 
       PaymentSummaryDto dto = PaymentSummaryDto.builder().payment_id(payment.getId()).title(title).thumbnailUrl(firstClass.getThumbnailUrl()).amount(payment.getAmount()).status(String.valueOf(payment.getStatus())) // enum -> 문자열
-          .paid_at(payment.getPaid_at()).build();
+          .paid_at(payment.getPaidAt()).build();
 
       result.add(dto);
     }
@@ -162,7 +162,7 @@ public class PaymentService {
       PaymentGroupDto groupDto = PaymentGroupDto.builder()
           .payment_id(payment.getId())
           .totalAmount(payment.getAmount())
-          .paid_at(payment.getPaid_at())
+          .paid_at(payment.getPaidAt())
           .classes(classList)
           .build();
 
@@ -218,7 +218,7 @@ public class PaymentService {
     payment.setPaymentKey(dto.getPaymentKey());
     payment.setUser(cart.get().getUser());
     payment.setAmount(totalAmount);
-    payment.setPaid_at(LocalDateTime.now());
+    payment.setPaidAt(LocalDateTime.now());
     payment.setPayType(paymentTypeRepository.findByName(dto.getMethod())
         .orElseThrow(() -> new IllegalArgumentException(dto.getStatus() + " 상태가 존재하지 않습니다.")));
     payment.setStatus(paymentStatusRepository.findByName("PAID")
@@ -259,7 +259,7 @@ public class PaymentService {
     }
 
     // 4. 결제일 기준 7일 이내인지 체크
-    if (payment.getPaid_at().plusDays(7).isBefore(LocalDateTime.now())) {
+    if (payment.getPaidAt().plusDays(7).isBefore(LocalDateTime.now())) {
       throw new IllegalStateException("결제일로부터 7일 이내에만 취소가 가능합니다.");
     }
 

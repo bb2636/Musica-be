@@ -23,9 +23,9 @@ public class InstructorAccount {
   @JoinColumn(name = "instructor_id", nullable = false)
   User user;
 
-  String bank_name;
-  String account_number;
-  String account_holder_name;
+  String bankName;
+  String accountNumber;
+  String accountHolderName;
 
-  LocalDateTime created_at;
+  LocalDateTime createdAt;
 }
