@@ -16,6 +16,8 @@ import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -455,6 +457,19 @@ public class ClassesService {
      */
     private double calculateAvgRating(Long classId) {
         return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClassCardDto> getFreeClassCards() {
+        List<Classes> freeClasses = classesRepository.findTop4ByClassPriceOrderByCreatedAtDesc(0);
+
+        return freeClasses.stream()
+                .map(cls -> {
+                    double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId())
+                            .orElse(0.0);
+                    return ClassCardDto.from(cls, avgRating);
+                })
+                .collect(Collectors.toList());
     }
 
 }

@@ -45,4 +45,9 @@ public class MainPageController {
         return ResponseEntity.ok(reviewService.getReviewSummaryCards());
     }
 
+    // 무료클래스 4개 조회
+    @GetMapping("/classes/free")
+    public ResponseEntity<List<ClassCardDto>> getFreeClassCards() {
+        return ResponseEntity.ok(classesService.getFreeClassCards());
+    }
 }
