@@ -115,22 +115,33 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
 
-        // 2. 사용자 조회
-        User user = userRepository.findById(JwtUtils.extractUserId(jwt))
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        // 3. jwt 가 null 또는 빈 문자열인 경우 → 비로그인 사용자로 처리
-        if (jwt == null || jwt.isBlank()) {
-            return LectureDetailResDto.from(lecture, null);  // 진행률 없음
+        // 2. Presigned URL 생성
+        String videoUrl = null;
+        if (lecture.getVideoObjectKey() != null && !lecture.getVideoObjectKey().isBlank()) {
+            videoUrl = generateDownloadUrl(lecture.getVideoObjectKey());
+        }
+        String fileUrl = null;
+        if (lecture.getFileObjectKey() != null && !lecture.getFileObjectKey().isBlank()) {
+            fileUrl = generateDownloadUrl(lecture.getFileObjectKey());
         }
 
-        // 4. 시청 진행률 조회
+        // 3. jwt가 없거나 빈 문자열이면 비로그인 사용자 처리 → 시청 기록 없음
+        if (jwt == null || jwt.isBlank()) {
+            return LectureDetailResDto.from(lecture, null, videoUrl, fileUrl);
+        }
+
+        // 4. 사용자 조회
+        Long userId = JwtUtils.extractUserId(jwt);
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 5. 시청 진행률 조회
         LectureProgress progress = lectureProgressRepository
             .findByUserAndLecture(user, lecture)
             .orElse(null);
 
-        // 5. DTO 변환
-        return LectureDetailResDto.from(lecture, progress);
+        // 6. DTO로 변환
+        return LectureDetailResDto.from(lecture, progress, videoUrl, fileUrl);
     }
 
     // 강의 목록 조회
@@ -193,30 +204,29 @@ public class LectureService {
 
     // 강의 시청 (간단히 videoUrl 과 진행률만 응답)
     // videoUrl - S3 Presigned Download URL
-    @Transactional(readOnly = true)
-    public LectureWatchResDto watchLecture(String jwt, Long lectureId) {
-        // 유저 인증 여부는 단순 확인용 (특별한 로직 없이)
-        // todo: 유저 인증 구현
-        Long userId = JwtUtils.extractUserId(jwt);
-
-        // 존재하는 강의인지 확인
-        Lecture lecture = lectureRepository.findById(lectureId)
-            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-
-        // lecture 에서 videoObjectKey 를 받아와 S3 Presigned Download URL 요청
-        // 응답으로 온 downloadUrl 이 실제로 영상을 볼 수 있는 url
-        String videoDownloadUrl = null;
-        if (lecture.getVideoObjectKey() != null && !lecture.getVideoObjectKey().isBlank()) {
-            videoDownloadUrl = generateDownloadUrl(lecture.getVideoObjectKey());
-        }
-
-        String fileDownloadUrl = null;
-        if (lecture.getFileObjectKey() != null && !lecture.getFileObjectKey().isBlank()) {
-            fileDownloadUrl = generateDownloadUrl(lecture.getFileObjectKey());
-        }
-
-        return LectureWatchResDto.from(lecture, videoDownloadUrl, fileDownloadUrl);
-    }
+//    @Transactional(readOnly = true)
+//    public LectureWatchResDto watchLecture(String jwt, Long lectureId) {
+//        // 유저 인증 여부는 단순 확인용 (특별한 로직 없이)
+//        // todo: 유저 인증 구현
+//        Long userId = JwtUtils.extractUserId(jwt);
+//
+//        // 존재하는 강의인지 확인
+//        Lecture lecture = lectureRepository.findById(lectureId)
+//            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
+//
+//        // lecture 에서 videoObjectKey 를 받아와 S3 Presigned Download URL 요청
+//        // 응답으로 온 downloadUrl 이 실제로 영상을 볼 수 있는 url
+//        String videoDownloadUrl = null;
+//        if (lecture.getVideoObjectKey() != null && !lecture.getVideoObjectKey().isBlank()) {
+//            videoDownloadUrl = generateDownloadUrl(lecture.getVideoObjectKey());
+//        }
+//        String fileDownloadUrl = null;
+//        if (lecture.getFileObjectKey() != null && !lecture.getFileObjectKey().isBlank()) {
+//            fileDownloadUrl = generateDownloadUrl(lecture.getFileObjectKey());
+//        }
+//
+//        return LectureWatchResDto.from(lecture, videoDownloadUrl, fileDownloadUrl);
+//    }
 
     // 강의 순서 변경
     @Transactional
@@ -302,6 +312,7 @@ public class LectureService {
     }
 
     // S3 Presigned URL 생성 (통합 메서드)
+    // 강사가 강의 추가 페이지에서 등록 버튼을 클릭했을 때 실행되는 로직
     public Map<String, String> generatePresignedUploadUrls(String videoName, String fileName) {
         Map<String, String> result = new java.util.HashMap<>();
         // 강의 영상인 경우 (mp4)
@@ -345,44 +356,71 @@ public class LectureService {
     }
 
     // ====== 헬퍼 메서드 ======
-    // 유저가 강사인지 확인하는 권한 확인 메서드
+    /**
+     * 강의 등록 또는 수정 시, 해당 강의의 소유자(강사)가 요청한 것인지 확인하는 권한 검사 메서드
+     *
+     * @param classes 확인 대상 클래스 엔티티
+     * @param userId  요청한 사용자 ID
+     * @throws SecurityException 강사가 아닌 경우 예외 발생
+     */
     private void validateInstructor(Classes classes, Long userId) {
         if (!classes.getInstructor().getId().equals(userId)) {
-            throw new SecurityException("권한이 없습니다.");
+            throw new SecurityException("권한이 없습니다.");  // 강사 본인이 아닐 경우 거부
         }
     }
 
-    // 받아온 S3 Presigned uploadUrl 에서 key 를 추출하는 메서드
+    /**
+     * 업로드 Presigned URL에서 객체 키(object key)를 추출하는 메서드
+     *
+     * 예: https://bucket.s3.amazonaws.com/lectures/abc.mp4?... → lectures/abc.mp4 추출
+     *
+     * @param url S3 Presigned upload URL
+     * @return S3 내부 객체 경로 (object key)
+     * @throws IllegalArgumentException 잘못된 URL 형식이거나 null/빈 문자열일 경우
+     */
     private String extractVideoObjectKey(String url) {
         if (url == null || url.isBlank()) {
-            return null; // 혹은 throw new IllegalArgumentException("URL이 제공되지 않았습니다.");
+            return null; // 또는 예외 발생: URL 미제공
         }
         try {
             URI uri = new URI(url);
-            return uri.getPath().substring(1); // "/lectures/..." → "lectures/..."
+            return uri.getPath().substring(1); // "/lectures/abc.mp4" → "lectures/abc.mp4"
         } catch (Exception e) {
             throw new IllegalArgumentException("잘못된 URL 형식입니다: " + url);
         }
     }
 
-    // 강의 다운로드 URL 생성 - S3 Presigned
-    // String key - fileObjectKey (fileUrl 에서 추출한 값, DB에 저장되어 있는 값)
-    // 응답으로 downloadUrl, 즉 실제로 강의 영상을 볼 수 있는 url 을 반환
-    // todo: api 테스트 후 public → private 으로 변경
+    /**
+     * 강의 영상 또는 파일의 S3 Presigned 다운로드 URL을 생성하는 메서드
+     *
+     * 프론트는 이 URL을 통해 실제 파일을 재생하거나 다운로드할 수 있음
+     *
+     * @param key S3에 저장된 객체 키 (예: lectures/abc.mp4)
+     * @return 시간 제한이 있는 Presigned 다운로드 URL
+     * @throws IllegalArgumentException 객체 키가 비어있거나 null일 경우
+     */
     public String generateDownloadUrl(String key) {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("S3 객체 키(key)는 null이거나 비어 있을 수 없습니다.");
         }
 
         return S3PresignedUrl.generateDownloadUrl(
-            presigner,
-            bucket,
-            key,
-            Duration.ofMinutes(60)
+            presigner,       // AWS S3 요청 서명 도구
+            bucket,          // 버킷 이름
+            key,             // 객체 키
+            Duration.ofMinutes(60)  // 1시간 동안 유효한 링크
         );
     }
 
-    // 파일 이름을 받아 확장자를 보고 content-type 을 자동으로 설정해주는 메서드
+    /**
+     * 파일 확장자에 따라 Content-Type을 유추하는 메서드
+     *
+     * Presigned URL 생성 시 올바른 Content-Type을 설정하기 위함
+     *
+     * @param filename 파일명 (확장자 포함)
+     * @return 해당 파일의 MIME 타입
+     * @throws IllegalArgumentException 지원하지 않는 확장자일 경우
+     */
     private static String guessContentType(String filename) {
         if (filename == null) throw new IllegalArgumentException("파일명이 비어 있습니다.");
 
