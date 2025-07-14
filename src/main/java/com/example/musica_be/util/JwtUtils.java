@@ -96,4 +96,44 @@ public class JwtUtils {
     String name = getNameFromToken(refreshToken);
     return generateAccessToken(email, userId, role, name);
   }
+  //토큰 유효성 검증해 BOOLEAN값 반환
+  public static boolean validateToken(String token) {
+    try {
+      token = token.startsWith("Bearer ") ? token.substring(7) : token;
+      Jwts.parserBuilder()
+              .setSigningKey(SECRET_KEY)
+              .build()
+              .parseClaimsJws(token);
+      return true;
+    } catch (JwtException | IllegalArgumentException e) {
+      System.out.println("Token validation failed: " + e.getMessage());
+      return false;
+    }
+  }
+  //  만료/유효/잘못된 토큰 구분해 상태 반환
+  public static String validateAndGetStatus(String token) {
+    try {
+      token = token.startsWith("Bearer ") ? token.substring(7) : token;
+      Jwts.parserBuilder()
+              .setSigningKey(SECRET_KEY)
+              .build()
+              .parseClaimsJws(token);
+      return "VALID";
+    } catch (ExpiredJwtException e) {
+      System.out.println("Token expired: " + e.getMessage());
+      return "EXPIRED";
+    } catch (JwtException | IllegalArgumentException e) {
+      System.out.println("Invalid token: " + e.getMessage());
+      return "INVALID";
+    }
+  }
+  public static Date getExpirationFromToken(String token) {
+    token = token.startsWith("Bearer ") ? token.substring(7) : token;
+    return Jwts.parserBuilder()
+            .setSigningKey(SECRET_KEY)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .getExpiration();
+  }
 }
