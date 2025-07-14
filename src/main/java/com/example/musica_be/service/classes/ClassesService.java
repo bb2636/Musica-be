@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -133,6 +134,7 @@ public class ClassesService {
 
     // 클래스 목록 조회
     // 1. 클래스 검색 결과 - 비회원 및 공개용
+
     /**
      * 클래스 검색 및 필터링 결과를 반환하는 메서드
      *
@@ -140,7 +142,7 @@ public class ClassesService {
      * @param categoryId   카테고리 ID 필터 (nullable)
      * @param difficultyId 난이도(Level) ID 필터 (nullable)
      * @param sortList     정렬 조건 리스트 (예: ["rating", "priceAsc"])
-     * @return             필터링 및 정렬된 클래스 요약 DTO 리스트
+     * @return 필터링 및 정렬된 클래스 요약 DTO 리스트
      */
     @Transactional(readOnly = true)
     public List<ClassSummaryDto> searchFilteredClassList(
@@ -159,31 +161,31 @@ public class ClassesService {
         for (String sort : sortList) {
             Comparator<Classes> current =
 
-            // 각 정렬 조건별 Comparator 정의
-            switch (sort) {
-                case "popular" -> // 조회수 많은 순
-                    current = Comparator.comparingInt(Classes::getViewCount).reversed();
+                // 각 정렬 조건별 Comparator 정의
+                switch (sort) {
+                    case "popular" -> // 조회수 많은 순
+                        current = Comparator.comparingInt(Classes::getViewCount).reversed();
 
-                case "priceAsc" -> // 가격 낮은 순
-                    current = Comparator.comparingInt(Classes::getClassPrice);
+                    case "priceAsc" -> // 가격 낮은 순
+                        current = Comparator.comparingInt(Classes::getClassPrice);
 
-                case "priceDesc" -> // 가격 높은 순
-                    current = Comparator.comparingInt(Classes::getClassPrice).reversed();
+                    case "priceDesc" -> // 가격 높은 순
+                        current = Comparator.comparingInt(Classes::getClassPrice).reversed();
 
-                case "latest" -> // 최신 등록일 순
-                    current = Comparator.comparing(Classes::getCreatedAt).reversed();
+                    case "latest" -> // 최신 등록일 순
+                        current = Comparator.comparing(Classes::getCreatedAt).reversed();
 
-                case "students" -> // 수강생 많은 순
-                    current = Comparator.comparingInt(
-                    (Classes c) -> studentCountMap.getOrDefault(c.getId(), 0)
-                ).reversed();
+                    case "students" -> // 수강생 많은 순
+                        current = Comparator.comparingInt(
+                            (Classes c) -> studentCountMap.getOrDefault(c.getId(), 0)
+                        ).reversed();
 
-                case "rating" // 평균 별점 높은 순
-                    -> current = Comparator.comparingDouble(
-                    (Classes c) -> ratingMap.getOrDefault(c.getId(), 0.0)
-                ).reversed();
-                default -> null;
-            };
+                    case "rating" // 평균 별점 높은 순
+                        -> current = Comparator.comparingDouble(
+                        (Classes c) -> ratingMap.getOrDefault(c.getId(), 0.0)
+                    ).reversed();
+                    default -> null;
+                };
 
             if (current == null) {
                 continue;
@@ -253,94 +255,6 @@ public class ClassesService {
             .toList();
     }
 
-    // ====== 헬퍼 메서드 ======
-    /**
-     * 클래스의 소유자인 강사만 수정/삭제할 수 있도록 검증하는 메서드
-     *
-     * @param classes 대상 클래스 엔티티
-     * @param userId 현재 로그인한 유저 ID (JWT에서 추출된 값)
-     * @throws SecurityException 만약 클래스의 강사 ID와 현재 유저 ID가 다르면 예외 발생
-     *
-     * 사용 예시:
-     * - 클래스 수정, 삭제 API에서 사용
-     * - 해당 클래스의 소유자가 본인인지 확인할 때
-     */
-    private void validateInstructorByClassAndUserId(Classes classes, Long userId) {
-        if (!classes.getInstructor().getId().equals(userId)) {
-            throw new SecurityException("권한이 없습니다: 강사 본인의 클래스만 수정/삭제할 수 있습니다.");
-        }
-    }
-
-    /**
-     * 요청한 유저가 '강사(INSTRUCTOR)' 권한을 가지고 있는지 검증하는 메서드
-     *
-     * @param jwt 클라이언트 요청의 JWT 토큰
-     * @throws SecurityException 만약 해당 유저의 역할이 강사가 아니면 예외 발생
-     *
-     * 사용 예시:
-     * - 클래스 등록 API에서 사용
-     * - 강사만 접근 가능한 기능을 호출했는지 사전 체크할 때
-     */
-    private void validateInstructorByRole(String jwt) {
-        String role = JwtUtils.extractRole(jwt);
-        System.out.println("role = " + role); // 디버깅용 출력
-        if (!"INSTRUCTOR".equals(role)) {
-            throw new SecurityException("권한이 없습니다: 강사가 아닙니다.");
-        }
-    }
-
-    /**
-     * 클래스 ID 목록을 기준으로 수강생 수를 조회하여 Map으로 반환합니다.
-     *
-     * @param classesList 클래스 엔티티 리스트
-     * @return 클래스 ID → 수강생 수 (Integer)로 구성된 Map
-     *
-     * 사용 예:
-     * - 수강생 수 기준 정렬("students") 시 사용
-     */
-    private Map<Long, Integer> getStudentCountMap(List<Classes> classesList) {
-        return classesRepository.countStudentsByClassIds(
-            classesList.stream().map(Classes::getId).toList()
-        ).stream().collect(Collectors.toMap(
-            StudentCountDto::getClassId, // 클래스 ID를 key로
-            dto -> dto.getCount().intValue() // 수강생 수(Long)을 int로 변환해서 value로
-        ));
-    }
-
-    /**
-     * 클래스 ID 목록을 기준으로 평균 별점을 조회하여 Map으로 반환합니다.
-     *
-     * @param classesList 클래스 엔티티 리스트
-     * @return 클래스 ID → 평균 별점(Double)으로 구성된 Map
-     *
-     * 사용 예:
-     * - 평점 기준 정렬("rating") 시 사용
-     */
-    private Map<Long, Double> getRatingMap(List<Classes> classesList) {
-        return reviewRepository.getAverageRatingsByClassIds(
-            classesList.stream().map(Classes::getId).toList()
-        ).stream().collect(Collectors.toMap(
-            ClassesRatingAvgDto::getClassId,
-            ClassesRatingAvgDto::getAverageRating
-        ));
-    }
-
-    /**
-     * 클래스 조회수 증가 메서드
-     *
-     * 클래스 상세 페이지를 조회할 때 호출되어, 해당 클래스의 조회수(viewCount)를 1 증가시킨다.
-     * JPA의 Dirty Checking을 활용하므로 save() 호출 없이도 변경 사항이 반영된다.
-     *
-     * @param classId 조회수를 증가시킬 클래스의 ID
-     * @throws IllegalArgumentException 주어진 ID의 클래스가 존재하지 않을 경우 예외 발생
-     */
-    private void increaseViewCount(Long classId) {
-        Classes classes = classesRepository.findById(classId)
-            .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 존재하지 않습니다."));
-
-        classes.setViewCount(classes.getViewCount() + 1);
-    }
-
     // 추천 클래스 조회 (1순위 관리자지정, 2순위 최신순)
     @Transactional(readOnly = true)
     public List<ClassCardDto> getRecommendedClasses(String jwt) {
@@ -388,10 +302,6 @@ public class ClassesService {
 
         return result;
     }
-    // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
-    private double calculateAvgRating(Long classId) {
-        return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
-    }
 
     // Popularity 점수 기반 인기 클래스 조회
     @Transactional(readOnly = true)
@@ -409,7 +319,7 @@ public class ClassesService {
         // 점수 내림차순, 같으면 createdAt 내림차순
         scoredList.sort((a, b) -> {
             int cmp = Integer.compare(b.getScore(), a.getScore());
-            if(cmp == 0) {
+            if (cmp == 0) {
                 return b.getClasses().getCreatedAt().compareTo(a.getClasses().getCreatedAt());
             }
             return cmp;
@@ -417,13 +327,13 @@ public class ClassesService {
 
         // 별점 포함 ClassCardDto로 변환, 상위 16개
         return scoredList.stream()
-                .limit(16)
-                .map(dto -> {
-                    Classes cls = dto.getClasses();
-                    double rating = calculateAvgRating(cls.getId());
-                    return ClassCardDto.from(cls, rating);
-                })
-                .collect(Collectors.toList());
+            .limit(16)
+            .map(dto -> {
+                Classes cls = dto.getClasses();
+                double rating = calculateAvgRating(cls.getId());
+                return ClassCardDto.from(cls, rating);
+            })
+            .collect(Collectors.toList());
     }
 
     // 최신 클래스 (16개 limit)
@@ -432,11 +342,121 @@ public class ClassesService {
         List<Classes> latestClasses = classesRepository.findTop16ByOrderByCreatedAtDesc();
 
         return latestClasses.stream()
-                .map(cls -> {
-                    double rating = calculateAvgRating(cls.getId());
-                    return ClassCardDto.from(cls, rating);
-                })
-                .collect(Collectors.toList());
+            .map(cls -> {
+                double rating = calculateAvgRating(cls.getId());
+                return ClassCardDto.from(cls, rating);
+            })
+            .collect(Collectors.toList());
     }
+
+    // ====== 헬퍼 메서드 ======
+
+    /**
+     * 클래스의 소유자인 강사만 수정/삭제할 수 있도록 검증하는 메서드
+     *
+     * @param classes 대상 클래스 엔티티
+     * @param userId  현재 로그인한 유저 ID (JWT에서 추출된 값)
+     * @throws SecurityException 만약 클래스의 강사 ID와 현재 유저 ID가 다르면 예외 발생
+     *                           <p>
+     *                           사용 예시:
+     *                           - 클래스 수정, 삭제 API에서 사용
+     *                           - 해당 클래스의 소유자가 본인인지 확인할 때
+     */
+    private void validateInstructorByClassAndUserId(Classes classes, Long userId) {
+        if (!classes.getInstructor().getId().equals(userId)) {
+            throw new SecurityException("권한이 없습니다: 강사 본인의 클래스만 수정/삭제할 수 있습니다.");
+        }
+    }
+
+    /**
+     * 요청한 유저가 '강사(INSTRUCTOR)' 권한을 가지고 있는지 검증하는 메서드
+     *
+     * @param jwt 클라이언트 요청의 JWT 토큰
+     * @throws SecurityException 만약 해당 유저의 역할이 강사가 아니면 예외 발생
+     *                           <p>
+     *                           사용 예시:
+     *                           - 클래스 등록 API에서 사용
+     *                           - 강사만 접근 가능한 기능을 호출했는지 사전 체크할 때
+     */
+    private void validateInstructorByRole(String jwt) {
+        String role = JwtUtils.extractRole(jwt);
+        System.out.println("role = " + role); // 디버깅용 출력
+        if (!"INSTRUCTOR".equals(role)) {
+            throw new SecurityException("권한이 없습니다: 강사가 아닙니다.");
+        }
+    }
+
+    /**
+     * 클래스 ID 목록을 기준으로 수강생 수를 조회하여 Map으로 반환합니다.
+     *
+     * @param classesList 클래스 엔티티 리스트
+     * @return 클래스 ID → 수강생 수 (Integer)로 구성된 Map
+     * <p>
+     * 사용 예:
+     * - 수강생 수 기준 정렬("students") 시 사용
+     */
+    private Map<Long, Integer> getStudentCountMap(List<Classes> classesList) {
+        return classesRepository.countStudentsByClassIds(
+            classesList.stream().map(Classes::getId).toList()
+        ).stream().collect(Collectors.toMap(
+            StudentCountDto::getClassId, // 클래스 ID를 key로
+            dto -> dto.getCount().intValue() // 수강생 수(Long)을 int로 변환해서 value로
+        ));
+    }
+
+    /**
+     * 클래스 ID 목록을 기준으로 평균 별점을 조회하여 Map으로 반환합니다.
+     *
+     * @param classesList 클래스 엔티티 리스트
+     * @return 클래스 ID → 평균 별점(Double)으로 구성된 Map
+     * <p>
+     * 사용 예:
+     * - 평점 기준 정렬("rating") 시 사용
+     */
+    private Map<Long, Double> getRatingMap(List<Classes> classesList) {
+        return reviewRepository.getAverageRatingsByClassIds(
+            classesList.stream().map(Classes::getId).toList()
+        ).stream().collect(Collectors.toMap(
+            ClassesRatingAvgDto::getClassId,
+            ClassesRatingAvgDto::getAverageRating
+        ));
+    }
+
+    /**
+     * 클래스 조회수 증가 메서드
+     * <p>
+     * 클래스 상세 페이지를 조회할 때 호출되어, 해당 클래스의 조회수(viewCount)를 1 증가시킨다.
+     * JPA의 Dirty Checking을 활용하므로 save() 호출 없이도 변경 사항이 반영된다.
+     *
+     * @param classId 조회수를 증가시킬 클래스의 ID
+     * @throws IllegalArgumentException 주어진 ID의 클래스가 존재하지 않을 경우 예외 발생
+     */
+    private void increaseViewCount(Long classId) {
+        Classes classes = classesRepository.findById(classId)
+            .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 존재하지 않습니다."));
+
+        classes.setViewCount(classes.getViewCount() + 1);
+    }
+
+    // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
+    /**
+     * 특정 클래스(classId)의 평균 별점을 계산하여 반환하는 메서드입니다.
+     *
+     * 이 메서드는 클래스 카드(ClassCardDto)를 구성할 때, 사용자들에게 보여질 평균 별점 정보를 제공하기 위해 사용됩니다.
+     * 평균 별점은 Review 테이블에서 해당 클래스에 작성된 모든 리뷰의 별점을 기반으로 계산됩니다.
+     *
+     * 사용 시점:
+     * - 추천 클래스 조회 (getRecommendedClasses)
+     * - 인기 클래스 조회 (getPopularClasses)
+     * - 최신 클래스 조회 (getLatestClasses)
+     * 등에서 ClassCardDto 생성 시 사용됩니다.
+     *
+     * @param classId 평균 별점을 계산할 대상 클래스의 ID
+     * @return 평균 별점 값 (리뷰가 없을 경우 기본값 0.0)
+     */
+    private double calculateAvgRating(Long classId) {
+        return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
+    }
+
 
 }
