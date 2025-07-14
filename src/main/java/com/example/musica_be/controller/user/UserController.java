@@ -4,28 +4,33 @@ import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.Wishlist;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.question.QuestionDto;
-import com.example.musica_be.dto.user.UpdateUserReqDto;
+import com.example.musica_be.dto.user.*;
 import com.example.musica_be.security.JwtTokenService;
+import com.example.musica_be.service.user.BlacklistService;
 import com.example.musica_be.service.user.UserService;
-import com.example.musica_be.dto.user.LoginReqDto;
-import com.example.musica_be.dto.user.RegisterReqDto;
-import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
+@Slf4j
 public class UserController {
     private final UserService userService;
     private final JwtTokenService jwtTokenService;
+    private final BlacklistService blacklistService;
 
     // 회원가입
     @PostMapping("/users/register")
@@ -56,14 +61,63 @@ public class UserController {
         }
     }
 
+    // Refresh Token 기반으로 AccessToken 재발급
+    @PostMapping("/auth/refresh")
+    public ResponseEntity<?> refreshAccessToken(@RequestBody RefreshRequest request) {
+        try {
+            String refreshToken = request.getRefreshToken();
+
+            // ✅ DB에 존재하는지 확인
+            if (!userService.existsByRefreshToken(refreshToken)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "DB에 등록되지 않은 RefreshToken"));
+            }
+
+            String status = JwtUtils.validateAndGetStatus(refreshToken);
+            if ("INVALID".equals(status)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "유효하지 않은 토큰입니다"));
+            } else if ("EXPIRED".equals(status)) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Refresh 토큰이 만료되었습니다"));
+            }
+
+            String newAccessToken = JwtUtils.refreshAccessToken(refreshToken);
+            return ResponseEntity.ok(new TokenResponse(newAccessToken));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "토큰 재발급 오류: " + e.getMessage()));
+        }
+    }
 
     // 로그아웃 (Optional - 서버 측 처리)
     @PostMapping("/auth/logout")
-    public ResponseEntity<String> logout() {
+    public ResponseEntity<String> logout(
+            @AuthenticationPrincipal User user,
+            @RequestHeader("Authorization") String authorizationHeader) {
+
         try {
+            // ✅ 1. AccessToken 블랙리스트에 추가
+            if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
+                String accessToken = authorizationHeader.substring(7);
+                // JWT에서 만료시간 파싱
+                Date expiryDate = JwtUtils.getExpirationFromToken(accessToken);
+                LocalDateTime expiryLocalDateTime = expiryDate.toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+
+                blacklistService.blacklistAccessToken(accessToken, expiryLocalDateTime);
+                log.info("AccessToken blacklisted: {}", accessToken);
+            }
+
+            // ✅ 2. RefreshToken DB에서 삭제
+            userService.deleteByUserId(user.getId());
+            log.info("Deleted RefreshToken for userId: {}", user.getId());
+
             return ResponseEntity.ok("Logged out successfully");
         } catch (Exception e) {
-            return ResponseEntity.status(400).body("Error: " + e.getMessage());
+            log.error("Logout error: {}", e.getMessage());
+            return ResponseEntity.status(400).body("Logout error: " + e.getMessage());
         }
     }
 

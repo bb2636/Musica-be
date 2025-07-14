@@ -14,6 +14,7 @@ import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.repository.qna.QuestionRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
+import com.example.musica_be.repository.user.RefreshTokenRepository;
 import com.example.musica_be.repository.user.SocialAccountRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.repository.wishlist.WishlistRepository;
@@ -38,6 +39,7 @@ public class UserService {
     private final WishlistRepository wishlistRepository;
     private final ReviewRepository reviewRepository;
     private final QuestionRepository questionRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     // 이메일로 사용자 찾기
     public Optional<User> findByEmail(String email) {
@@ -183,6 +185,14 @@ public class UserService {
         } else {
             throw new IllegalArgumentException("User not found");
         }
+    }
+    //로그아웃 시 리프레시 토큰 삭제
+    public void deleteByUserId(Long userId) {
+        refreshTokenRepository.deleteByUserId(userId);
+    }
+
+    public boolean existsByRefreshToken(String refreshToken) {
+        return refreshTokenRepository.findByRefreshToken(refreshToken) != null;
     }
 
     // 회원 탈퇴
