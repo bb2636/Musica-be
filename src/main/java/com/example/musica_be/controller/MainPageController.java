@@ -1,7 +1,9 @@
 package com.example.musica_be.controller;
 
 import com.example.musica_be.dto.classes.ClassCardDto;
+import com.example.musica_be.dto.review.ReviewSummaryCardDto;
 import com.example.musica_be.service.classes.ClassesService;
+import com.example.musica_be.service.review.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +18,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MainPageController {
     private final ClassesService classesService;
+    private final ReviewService reviewService;
 
     // 추천 클래스 조회
     @GetMapping("/recommend")
@@ -34,6 +37,12 @@ public class MainPageController {
     @GetMapping("/latest")
     public ResponseEntity<List<ClassCardDto>> getLatestClasses() {
         return ResponseEntity.ok(classesService.getLatestClasses());
+    }
+
+    // 후기 요약 카드 조회
+    @GetMapping("/reviews/summary")
+    public ResponseEntity<List<ReviewSummaryCardDto>> getReviewsSummaryCard() {
+        return ResponseEntity.ok(reviewService.getReviewSummaryCards());
     }
 
 }
