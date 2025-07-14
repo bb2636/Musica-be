@@ -14,4 +14,6 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Integer> {
     List<Wishlist> findAllByUser(User user);
 
     List<Wishlist> findByUserId(Long userId);
+
+    int countByClasses(Classes classes);  // 찜 수
 }

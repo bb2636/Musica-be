@@ -11,6 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class ClassCardDto {
+    // 메인 페이지 클래스 카드 ( 추천, 인기 등 )
     private Long id;
     private String title;
     private String thumbnailUrl;

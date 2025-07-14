@@ -1,5 +1,6 @@
 package com.example.musica_be.repository.payment;
 
+import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.payment.Payment;
 import com.example.musica_be.domain.payment.PaymentItem;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,4 +15,6 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
   List<PaymentItem> findByUserId(@Param("userId") Long userId);
 
   List<PaymentItem> findByPaymentId(Long id);
+
+  int countByClasses(Classes classes);  // 결제 수
 }
