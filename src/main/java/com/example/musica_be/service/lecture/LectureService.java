@@ -115,36 +115,28 @@ public class LectureService {
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
 
-        // 2. JWT가 null 또는 빈 문자열인 경우 → 비로그인 사용자로 처리
+        // 2. 사용자 조회
+        User user = userRepository.findById(JwtUtils.extractUserId(jwt))
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 3. jwt 가 null 또는 빈 문자열인 경우 → 비로그인 사용자로 처리
         if (jwt == null || jwt.isBlank()) {
             return LectureDetailResDto.from(lecture, null);  // 진행률 없음
         }
 
-        // 3. 로그인 사용자일 경우 → userId 추출
-        Long userId;
-        try {
-            userId = JwtUtils.extractUserId(jwt);
-        } catch (Exception e) {
-            return LectureDetailResDto.from(lecture, null); // JWT 파싱 실패 → 비로그인 처리
-        }
-
-        // 4. 사용자 조회
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        // 5. 시청 진행률 조회
+        // 4. 시청 진행률 조회
         LectureProgress progress = lectureProgressRepository
             .findByUserAndLecture(user, lecture)
             .orElse(null);
 
-        // 6. DTO 변환
+        // 5. DTO 변환
         return LectureDetailResDto.from(lecture, progress);
     }
 
     // 강의 목록 조회
     // 1. 공개용 - 진행률 없이 기본 정보만 반환
     @Transactional(readOnly = true)
-    public List<LectureSummaryDto> getPublicLectureList(Long classId) {
+    public List<LectureSummaryDto> getLectureList(Long classId) {
         // 존재하는 클래스인지 확인
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스를 찾을 수 없습니다."));

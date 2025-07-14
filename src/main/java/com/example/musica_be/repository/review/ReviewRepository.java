@@ -2,6 +2,7 @@ package com.example.musica_be.repository.review;
 
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.classes.ClassesRatingAvgDto;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,6 +28,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     Optional<Review> findByReviewIdAndUser(Integer reviewId, User user); // 본인 확인용
 
     List<Review> findByUserId(Long userId);
+
+    @Query("""
+    SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))
+    FROM Review r
+    GROUP BY r.classes.id
+    """)
+    List<ClassesRatingAvgDto> getAverageRatingsByClassIds(List<Long> classIds);
 
     // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
     @Query("SELECT AVG(r.rating) FROM Review r WHERE r.classes.id = :classId")

@@ -3,17 +3,14 @@ package com.example.musica_be.controller;
 import com.example.musica_be.dto.lecture.*;
 import com.example.musica_be.service.lecture.LectureService;
 import com.example.musica_be.util.JwtUtils;
-import io.jsonwebtoken.Jwt;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.tomcat.util.http.parser.Authorization;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 @RestController
 @RequestMapping("/api")
@@ -24,7 +21,7 @@ public class LectureController {
     private final LectureService lectureService;
 
     // 강의 등록
-    @PostMapping("/instructor/classes/{classId}/lectures")
+    @PostMapping("/instructors/classes/{classId}/lectures")
     public ResponseEntity<?> createLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId,
@@ -33,12 +30,12 @@ public class LectureController {
         Long lectureId = lectureService.createLecture(jwt, classId, dto);
         return ResponseEntity.status(201).body(Map.of(
             "lecture_id", lectureId,
-            "message", "강의가 등록되었습니다."
+            "message", "강의 등록 완료"
         ));
     }
 
     // 강의 수정
-    @PutMapping("/instructor/lectures/{lectureId}")
+    @PutMapping("/instructors/lectures/{lectureId}")
     public ResponseEntity<Map<String, String>> updateLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId,
@@ -46,20 +43,20 @@ public class LectureController {
     ) {
         lectureService.updateLecture(jwt, lectureId, dto);
         return ResponseEntity.ok(Map.of(
-            "message", "강의가 성공적으로 수정되었습니다.",
+            "message", "강의 수정 완료",
             "lecture_id", lectureId.toString()
         ));
     }
 
     // 강의 삭제
-    @DeleteMapping("/instructor/lectures/{lectureId}")
+    @DeleteMapping("/instructors/lectures/{lectureId}")
     public ResponseEntity<Map<String, String>> deleteLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long lectureId
     ) {
         lectureService.deleteLecture(jwt, lectureId);
         return ResponseEntity.ok(Map.of(
-            "message", "강의가 정상적으로 삭제되었습니다.",
+            "message", "강의 삭제 완료",
             "lecture_id", lectureId.toString()
         ));
     }
@@ -75,16 +72,16 @@ public class LectureController {
 
     // 강의 목록 조회
     // 1. 비회원 및 공개용 (JWT 없이 접근 가능)
-    @GetMapping("/public/classes/{classId}/lectures")
-    public ResponseEntity<List<LectureSummaryDto>> getPublicLectureList(
+    @GetMapping("/classes/{classId}/lectures")
+    public ResponseEntity<List<LectureSummaryDto>> getLectureList(
         @PathVariable Long classId
     ) {
-        return ResponseEntity.ok(lectureService.getPublicLectureList(classId));
+        return ResponseEntity.ok(lectureService.getLectureList(classId));
     }
 
     // 2. 수강생 전용
-    @GetMapping("/classes/{classId}/lectures")
-    public ResponseEntity<List<LectureSummaryDto>> getLectureList(
+    @GetMapping("/users/classes/{classId}/lectures")
+    public ResponseEntity<List<LectureSummaryDto>> getLectureListForStudent(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId
     ) {
@@ -94,7 +91,7 @@ public class LectureController {
 
     // 3. 강사 전용
     @GetMapping("/instructors/classes/{classId}/lectures")
-    public ResponseEntity<List<LectureSummaryDto>> getInstructorLectureList(
+    public ResponseEntity<List<LectureSummaryDto>> getLectureListForInstructor(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId
     ) {

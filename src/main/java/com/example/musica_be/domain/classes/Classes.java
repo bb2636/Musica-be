@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "classes") // 테이블명도 classes로
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
@@ -45,6 +46,9 @@ public class Classes {
 
     @Column(name = "class_price", nullable = false)
     private Integer classPrice;
+
+    @Column(nullable = false)
+    private int viewCount;
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

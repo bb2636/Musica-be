@@ -17,8 +17,17 @@ public class JwtUtils {
       String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
       return Long.parseLong(getUserIdFromToken(token));
     } catch (Exception e) {
-      System.out.println("JWT에서 userId 파싱 실패: " + e.getMessage());
-      throw new RuntimeException("JWT parsing failed", e);
+      throw new RuntimeException("JWT에서 userId 파싱 실패", e);
+    }
+  }
+
+  // "Bearer {token}" 형식의 JWT 문자열에서 role(String)을 추출하는 유틸 메서드
+  public static String extractRole(String jwtWithBearer) {
+    try {
+      String token = jwtWithBearer.startsWith("Bearer ") ? jwtWithBearer.substring(7) : jwtWithBearer;
+      return getRoleFromToken(token);
+    } catch (Exception e) {
+      throw new RuntimeException("JWT에서 role 파싱 실패", e);
     }
   }
 
