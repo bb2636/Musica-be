@@ -4,13 +4,11 @@ import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
-import com.example.musica_be.dto.classes.ClassDetailResDto;
-import com.example.musica_be.dto.classes.ClassCreateReqDto;
-import com.example.musica_be.dto.classes.ClassSummaryDto;
-import com.example.musica_be.dto.classes.ClassUpdateReqDto;
+import com.example.musica_be.dto.classes.*;
 import com.example.musica_be.repository.classes.CategoryRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
+import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
@@ -19,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -31,6 +30,7 @@ public class ClassesService {
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
     // 클래스 등록
     @Transactional
@@ -58,6 +58,7 @@ public class ClassesService {
             .thumbnailUrl(dto.getThumbnailUrl())
             .classPrice(dto.getClassPrice())
             .instructor(instructor)
+            .isRecommended(dto.getIsRecommended() != null && dto.getIsRecommended())
             .build();
 
         return classesRepository.save(classes).getId();
@@ -87,7 +88,8 @@ public class ClassesService {
             category,
             difficulty,
             dto.getThumbnailUrl(),
-            dto.getClassPrice()
+            dto.getClassPrice(),
+            dto.getIsRecommended() != null && dto.getIsRecommended()
         );
     }
 
@@ -134,4 +136,57 @@ public class ClassesService {
             throw new SecurityException("권한이 없습니다: 강사 본인의 클래스만 수정/삭제할 수 있습니다.");
         }
     }
+
+    // 추천 클래스 조회 (1순위 관리자지정, 2순위 최신순)
+    @Transactional(readOnly = true)
+    public List<ClassCardDto> getRecommendedClasses(String jwt) {
+        Long userId = null;
+        // [선택적 인증] JWT가 있을 때만 추출
+        if (jwt != null && jwt.startsWith("Bearer ")) {
+            try {
+                userId = JwtUtils.extractUserId(jwt);
+                log.info("추천 클래스 요청 유저 ID: {}", userId);
+            } catch (Exception e) {
+                log.warn("JWT 파싱 실패 – 비회원 접근으로 처리");
+            }
+        }
+
+        List<ClassCardDto> result = new ArrayList<>();
+
+        // 1. 관리자가 추천한 클래스 최대 4개까지 조회
+        List<Classes> recommended = classesRepository.findTop4ByIsRecommendedTrueOrderByCreatedAtDesc();
+
+        int needed = 4;
+
+        if (recommended != null && !recommended.isEmpty()) {
+            for (Classes cls : recommended) {
+                double rating = calculateAvgRating(cls.getId());
+                result.add(ClassCardDto.from(cls, rating));
+            }
+            needed -= recommended.size();
+        }
+
+        // 2. 추천 클래스가 4개보다 부족하면 최신순에서 추가로 채움
+        if (needed > 0) {
+            List<Classes> latest = classesRepository.findByIsRecommendedFalseOrderByCreatedAtDesc();
+
+            for (Classes cls : latest) {
+                if (needed == 0) break;
+
+                // 이미 추천에 들어간 클래스 중복 방지 (옵션)
+                if (recommended.contains(cls)) continue;
+
+                double rating = calculateAvgRating(cls.getId());
+                result.add(ClassCardDto.from(cls, rating));
+                needed--;
+            }
+        }
+
+        return result;
+    }
+    // 클래스별 평균 별점 구하는 로직 - (FE) ClassCard 표시용
+    private double calculateAvgRating(Long classId) {
+        return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
+    }
+
 }

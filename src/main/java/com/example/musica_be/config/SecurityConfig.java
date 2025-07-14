@@ -83,8 +83,9 @@ public class SecurityConfig {
                         "/oauth2/authorization/kakao", //카카오 로그인 용
                         "/login/oauth2/**", //리다이렉션 url 허용
                         "/oauth-success", // 프론트 리디렉션 용
-                        "/api/user/signup" //카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
-                        "/api/payment/cart/checkout"// 카트 결제 (토스 결제를 위한)
+                        "/api/user/signup", //카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
+                        "/api/payment/cart/checkout", // 카트 결제 (토스 결제를 위한)
+                        "/api/main/recommend" // 추천클래스 - 메인페이지
 
                 ).permitAll()
                 // URL 경로를 역할별로 나눔 // todo: 추가한 코드 - 강동균 (2025. 07. 11. 00:02)
