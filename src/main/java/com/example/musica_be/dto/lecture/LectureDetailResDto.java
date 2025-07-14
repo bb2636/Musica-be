@@ -10,19 +10,24 @@ import lombok.Getter;
 public class LectureDetailResDto {
     private Long id;
     private String title;
-    private String videoUrl;
-    private String fileUrl;
+    private String videoUrl; // Presigned URL
+    private String fileUrl;  // Presigned URL
     private Integer lectureOrder;
-    private Integer duration;         // 강의 전체 길이
-    private Integer progress;         // 사용자의 시청 시간
-    private Boolean isCompleted;      // 시청 완료 여부
+    private Integer duration; // 강의 영상 길이
+    private Integer progress;
+    private Boolean isCompleted;
 
-    public static LectureDetailResDto from(Lecture lecture, LectureProgress progress) {
+    public static LectureDetailResDto from(
+        Lecture lecture,
+        LectureProgress progress,
+        String videoUrl,       // Presigned URL 주입
+        String fileUrl         // Presigned URL 주입
+    ) {
         return LectureDetailResDto.builder()
             .id(lecture.getId())
             .title(lecture.getTitle())
-            .videoUrl(lecture.getVideoUrl())
-            .fileUrl(lecture.getFileUrl())
+            .videoUrl(videoUrl)
+            .fileUrl(fileUrl)
             .lectureOrder(lecture.getLectureOrder())
             .duration(lecture.getDuration())
             .progress(progress != null ? progress.getWatchedSeconds() : 0)

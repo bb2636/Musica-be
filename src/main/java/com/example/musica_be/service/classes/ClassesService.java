@@ -380,7 +380,6 @@ public class ClassesService {
      */
     private void validateInstructorByRole(String jwt) {
         String role = JwtUtils.extractRole(jwt);
-        System.out.println("role = " + role); // 디버깅용 출력
         if (!"INSTRUCTOR".equals(role)) {
             throw new SecurityException("권한이 없습니다: 강사가 아닙니다.");
         }
@@ -391,7 +390,7 @@ public class ClassesService {
      *
      * @param classesList 클래스 엔티티 리스트
      * @return 클래스 ID → 수강생 수 (Integer)로 구성된 Map
-     * <p>
+     *
      * 사용 예:
      * - 수강생 수 기준 정렬("students") 시 사용
      */
@@ -409,7 +408,7 @@ public class ClassesService {
      *
      * @param classesList 클래스 엔티티 리스트
      * @return 클래스 ID → 평균 별점(Double)으로 구성된 Map
-     * <p>
+     *
      * 사용 예:
      * - 평점 기준 정렬("rating") 시 사용
      */
@@ -424,7 +423,7 @@ public class ClassesService {
 
     /**
      * 클래스 조회수 증가 메서드
-     * <p>
+     *
      * 클래스 상세 페이지를 조회할 때 호출되어, 해당 클래스의 조회수(viewCount)를 1 증가시킨다.
      * JPA의 Dirty Checking을 활용하므로 save() 호출 없이도 변경 사항이 반영된다.
      *
@@ -457,6 +456,5 @@ public class ClassesService {
     private double calculateAvgRating(Long classId) {
         return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
     }
-
 
 }
