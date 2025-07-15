@@ -1,5 +1,8 @@
 package com.example.musica_be.config;
 
+import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.user.UserResDto;
+import com.example.musica_be.service.user.UserService;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,6 +20,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
+    private final UserService userService;
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
                                         HttpServletResponse response,
@@ -25,23 +30,31 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
         OAuth2User oAuth2User = oauthToken.getPrincipal();
 
-        // ✅ 카카오 정보 추출
         Map<String, Object> kakaoAccount = oAuth2User.getAttribute("kakao_account");
         Map<String, Object> properties = oAuth2User.getAttribute("properties");
 
         String email = kakaoAccount != null ? (String) kakaoAccount.get("email") : null;
         String name = properties != null ? (String) properties.get("nickname") : "unknown";
-        Long id = (Long) oAuth2User.getAttribute("id");
-        String kakaoId = String.valueOf(id);
+        String provider = oauthToken.getAuthorizedClientRegistrationId(); // e.g. "kakao"
+        Object idObj = oAuth2User.getAttribute("id");
+        String kakaoId = String.valueOf(idObj);
 
-        System.out.println("✅ 카카오 로그인 정보: email=" + email + ", nickname=" + name + ", id=" + kakaoId);
+        System.out.println("✅ 카카오 로그인 정보: email=" + email + ", nickname=" + name + ", kakaoId=" + kakaoId);
 
-        // ✅ User DB에 저장은 하지 않음.
-        // JWT만 발급 (role USER, email, kakaoId 넣기)
-        String token = JwtUtils.generateAccessToken(email, kakaoId, "USER", name);
+        // 🔥 DB에서 User 찾기 (없으면 회원가입)
+        User user = userService.findByEmail(email)
+                .orElseGet(() -> {
+                    userService.registerUserFromOAuth(email, name, "USER", 1L);
+                    return userService.findByEmail(email)
+                            .orElseThrow(() -> new IllegalStateException("등록 후 User를 찾을 수 없습니다."));
+                });
+
+        // 🔥 반드시 DB id를 JWT sub에 넣기
+        String token = JwtUtils.generateAccessToken(email, String.valueOf(user.getId()), user.getRole().name(), name);
 
         String redirectUrl = "http://localhost:5173/oauth-success?token=" + token;
         System.out.println("✅ 리디렉션 URL: " + redirectUrl);
         response.sendRedirect(redirectUrl);
     }
 }
+

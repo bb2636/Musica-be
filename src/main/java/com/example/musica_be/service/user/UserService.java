@@ -110,7 +110,7 @@ public class UserService {
     }
 
     // OAuth2 로그인 후 받은 정보로 회원가입 처리
-    public UserResDto registerUserFromOAuth(String email, String name, String role, Long levelId) {
+    public User registerUserFromOAuth(String email, String name, String role, Long levelId) {
         Level level = null;
 
         // levelId 못받으면 자동으로 1L
@@ -132,7 +132,7 @@ public class UserService {
         // 이미 존재하면 그대로 반환
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
-            return new UserResDto(existingUser.get());
+            return existingUser.get();
         }
 
         User user = new User();
@@ -148,9 +148,7 @@ public class UserService {
         if (userRole == Role.USER) {
             user.setLevel(level);
         }
-
-        userRepository.save(user);
-        return new UserResDto(user);
+        return userRepository.save(user);
     }
 
 
