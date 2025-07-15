@@ -3,6 +3,7 @@ package com.example.musica_be.repository.classes;
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.dto.classes.StudentCountDto;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -51,4 +52,6 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
     // 최신 클래스(16 limit 정렬)
     List<Classes> findTop16ByOrderByCreatedAtDesc();
 
+    // 무료 클래스 4개 조회 (최신순)
+    List<Classes> findTop4ByClassPriceOrderByCreatedAtDesc(Integer classPrice);
 }
