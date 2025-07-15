@@ -219,7 +219,6 @@ public class ClassesService {
         Pageable top20 = PageRequest.of(0, 20);
         List<Classes> recommended = classesRepository.findRecommendedByLevelId(levelId, top20);
 
-        // 추천 결과가 부족할 경우 보충
         if (recommended.size() < 20) {
             List<Long> excludeIds = recommended.stream().map(Classes::getId).toList();
             List<Classes> latest = classesRepository.findTop20ByOrderByCreatedAtDesc().stream()
@@ -229,10 +228,18 @@ public class ClassesService {
             recommended.addAll(latest);
         }
 
+        // N+1 방지: 평균 별점 한 번에 조회
+        Map<Long, Double> avgMap = reviewRepository.getAverageRatings(
+                recommended.stream().map(Classes::getId).toList()
+        ).stream().collect(Collectors.toMap(
+                dto -> dto.getClassId(),
+                dto -> dto.getAverageRating()
+        ));
+
         return recommended.stream()
                 .map(cls -> {
-                    double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId()).orElse(0.0);
-                    return ClassCardDto.from(cls, avgRating);
+                    double rating = avgMap.getOrDefault(cls.getId(), 0.0);
+                    return ClassCardDto.from(cls, rating);
                 })
                 .toList();
     }
