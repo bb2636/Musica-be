@@ -91,6 +91,8 @@ public class SecurityConfig {
                     "/api/payment/cart/checkout", // 카트 결제 (토스 결제를 위한)
                     "/api/main/**" // 메인페이지 (추천,인기,최신,후기요약 ai 등등)
                 ).permitAll()
+                // 메인페이지 클래스 추천 허용(GET)
+                .requestMatchers("/api/classes/recommend").hasRole("USER")
                 // 클래스 상세 조회 허용 (GET)
                 .requestMatchers(HttpMethod.GET, "/api/classes/**").permitAll()
                 // 클래스 검색 허용 (GET)

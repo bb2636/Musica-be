@@ -16,5 +16,4 @@ public class ClassUpdateReqDto {
     private String thumbnailUrl;
     @NotNull(message = "클래스 가격은 필수입니다.")
     private Integer classPrice;
-    private Boolean isRecommended;
 }

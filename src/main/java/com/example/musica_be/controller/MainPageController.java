@@ -4,7 +4,9 @@ import com.example.musica_be.dto.classes.ClassCardDto;
 import com.example.musica_be.dto.review.ReviewSummaryCardDto;
 import com.example.musica_be.service.classes.ClassesService;
 import com.example.musica_be.service.review.ReviewService;
+import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -20,11 +22,20 @@ public class MainPageController {
     private final ClassesService classesService;
     private final ReviewService reviewService;
 
-    // 추천 클래스 조회
+    // 개인화 추천 클래스 API
     @GetMapping("/recommend")
     public ResponseEntity<List<ClassCardDto>> getRecommendedClasses(
-            @RequestHeader(value = "Authorization", required = false) String jwt) {
-        return ResponseEntity.ok(classesService.getRecommendedClasses(jwt));
+            @RequestHeader("Authorization") String jwt) {
+
+        Long userId = JwtUtils.extractUserId(jwt);
+        String role = JwtUtils.extractRole(jwt);
+
+        if (!"USER".equalsIgnoreCase(role)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<ClassCardDto> result = classesService.getRecommendedClasses(userId);
+        return ResponseEntity.ok(result);
     }
 
     // 인기 클래스 조회

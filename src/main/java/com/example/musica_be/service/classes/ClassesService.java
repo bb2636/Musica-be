@@ -64,7 +64,6 @@ public class ClassesService {
             .thumbnailUrl(dto.getThumbnailUrl())
             .classPrice(dto.getClassPrice())
             .instructor(instructor)
-            .isRecommended(dto.getIsRecommended() != null && dto.getIsRecommended())
             .build();
 
         return classesRepository.save(classes).getId();
@@ -94,8 +93,7 @@ public class ClassesService {
             category,
             difficulty,
             dto.getThumbnailUrl(),
-            dto.getClassPrice(),
-            dto.getIsRecommended() != null && dto.getIsRecommended()
+            dto.getClassPrice()
         );
     }
 
@@ -208,53 +206,37 @@ public class ClassesService {
             .toList();
     }
 
-    // 추천 클래스 조회 (1순위 관리자지정, 2순위 최신순)
+    // 같은레벨 추천클래스(20개) - 평점기준 탑20개
     @Transactional(readOnly = true)
-    public List<ClassCardDto> getRecommendedClasses(String jwt) {
-        Long userId = null;
-        // [선택적 인증] JWT가 있을 때만 추출
-        if (jwt != null && jwt.startsWith("Bearer ")) {
-            try {
-                userId = JwtUtils.extractUserId(jwt);
-                log.info("추천 클래스 요청 유저 ID: {}", userId);
-            } catch (Exception e) {
-                log.warn("JWT 파싱 실패 – 비회원 접근으로 처리");
-            }
+    public List<ClassCardDto> getRecommendedClasses(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+
+        Long levelId = Optional.ofNullable(user.getLevel())
+                .map(Level::getId)
+                .orElseThrow(() -> new IllegalStateException("회원 레벨 정보가 없습니다."));
+
+        Pageable top20 = PageRequest.of(0, 20);
+        List<Classes> recommended = classesRepository.findRecommendedByLevelId(levelId, top20);
+
+        // 추천 결과가 부족할 경우 보충
+        if (recommended.size() < 20) {
+            List<Long> excludeIds = recommended.stream().map(Classes::getId).toList();
+            List<Classes> latest = classesRepository.findTop20ByOrderByCreatedAtDesc().stream()
+                    .filter(c -> !excludeIds.contains(c.getId()))
+                    .limit(20 - recommended.size())
+                    .toList();
+            recommended.addAll(latest);
         }
 
-        List<ClassCardDto> result = new ArrayList<>();
-
-        // 1. 관리자가 추천한 클래스 최대 4개까지 조회
-        List<Classes> recommended = classesRepository.findTop4ByIsRecommendedTrueOrderByCreatedAtDesc();
-
-        int needed = 4;
-
-        if (recommended != null && !recommended.isEmpty()) {
-            for (Classes cls : recommended) {
-                double rating = calculateAvgRating(cls.getId());
-                result.add(ClassCardDto.from(cls, rating));
-            }
-            needed -= recommended.size();
-        }
-
-        // 2. 추천 클래스가 4개보다 부족하면 최신순에서 추가로 채움
-        if (needed > 0) {
-            List<Classes> latest = classesRepository.findByIsRecommendedFalseOrderByCreatedAtDesc();
-
-            for (Classes cls : latest) {
-                if (needed == 0) break;
-
-                // 이미 추천에 들어간 클래스 중복 방지 (옵션)
-                if (recommended.contains(cls)) continue;
-
-                double rating = calculateAvgRating(cls.getId());
-                result.add(ClassCardDto.from(cls, rating));
-                needed--;
-            }
-        }
-
-        return result;
+        return recommended.stream()
+                .map(cls -> {
+                    double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId()).orElse(0.0);
+                    return ClassCardDto.from(cls, avgRating);
+                })
+                .toList();
     }
+
 
     // Popularity 점수 기반 인기 클래스 조회
     @Transactional(readOnly = true)

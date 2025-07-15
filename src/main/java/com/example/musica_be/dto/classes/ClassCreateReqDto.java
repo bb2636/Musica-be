@@ -21,6 +21,4 @@ public class ClassCreateReqDto {
 
     @NotNull(message = "클래스 가격은 필수입니다.")
     private Integer classPrice;      // 클래스 가격
-
-    private Boolean isRecommended;  // 관리자 추천 여부 (기본값 false, true 설정 시 추천 클래스로 등록)
 }
