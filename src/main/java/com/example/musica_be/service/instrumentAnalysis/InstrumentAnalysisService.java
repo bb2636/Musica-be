@@ -41,40 +41,6 @@ public class InstrumentAnalysisService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-//    /**
-//     * [1] S3 Presigned Upload URL 발급
-//     * - 강사가 영상(mp4) 또는 자료(pdf 등)을 업로드하기 전에 호출됨
-//     * - 업로드용 URL과 일반 S3 객체 URL을 함께 반환
-//     */
-//    public UrlResponseDto getUrl() {
-//        String videoFileName = "video_" + UUID.randomUUID() + ".mp4";
-//        String videoKey = "lectures/" + videoFileName;
-//
-//        String videoUploadUrl = S3PresignedUrl.generateUploadUrl(
-//            s3Presigner, bucket, videoKey, "video/mp4", Duration.ofMinutes(60)
-//        );
-//        String videoUrl = "https://" + bucket + ".s3.amazonaws.com/" + videoKey;
-//
-//        return new UrlResponseDto(videoUploadUrl, videoUrl);
-//    }
-//
-//    /**
-//     * [2] 분석 Job 생성 - 사용자가 직접 요청한 경우
-//     * - 프론트에서 S3 업로드 완료 후 download URL 을 전달하여 분석 요청
-//     */
-//    public JobCreateResponseDto createJob(JobCreateRequestDto request) {
-//        return musicAiClient.createJob(request);
-//    }
-//
-//    /**
-//     * [3] 분석 결과 조회 (jobId 기반)
-//     */
-//    public InstrumentAnalysisResponseDto getResult(String jobId) {
-//        InstrumentAnalysis analysis = analysisRepository.findByJobId(jobId)
-//            .orElseThrow(() -> new EntityNotFoundException("Job not found with id = " + jobId));
-//        return InstrumentAnalysisResponseDto.from(analysis);
-//    }
-
     /**
      * 통합 요청 (강의 조회 + 분석 Job 생성 + 결과 저장)
      * 강의 등록 후 자동으로 MusicAI에 분석 요청을 보내고, 결과는 DB에 PENDING 상태로 저장
@@ -203,55 +169,55 @@ public class InstrumentAnalysisService {
      *
      * 이 메서드는 스케줄러(@Scheduled) 또는 수동 호출로 주기적 실행을 전제로 설계되었습니다.
      */
-    @Transactional
-    public void updatePendingAnalyses() {
-        List<InstrumentAnalysis> pendingJobs =
-            analysisRepository.findByStatus(AnalysisStatus.PENDING);
-
-        for (InstrumentAnalysis analysis : pendingJobs) {
-            String jobId = analysis.getJobId();
-
-            try {
-                JobStatusResponseDto jobStatus = musicAiClient.getJobResult(jobId);
-
-                if (!"SUCCEEDED".equalsIgnoreCase(jobStatus.getStatus())) {
-                    log.info("아직 완료되지 않은 Job입니다. jobId={}, status={}", jobId, jobStatus.getStatus());
-                    continue;
-                }
-
-                if (jobStatus.getResult() == null || jobStatus.getResult().getResultJson() == null) {
-                    log.warn("결과 필드가 비어있음. jobId={}", jobId);
-                    continue;
-                }
-
-                // 결과 파싱
-                JobStatusResponseDto.Detection detection = objectMapper.readValue(
-                    jobStatus.getResult().getResultJson(),
-                    JobStatusResponseDto.Detection.class
-                );
-                jobStatus.setDetection(detection);
-
-                // JSON으로 변환
-                String instrumentsJson = toJson(detection.getInstruments());
-                String scoresJson = toJson(detection.getProbabilities());
-                String thresholdsJson = toJson(detection.getThresholds());
-
-                // 분석 성공 업데이트
-                analysis.updateSuccess(
-                    instrumentsJson,
-                    scoresJson,
-                    thresholdsJson,
-                    jobStatus.getCompletedAt() != null ? jobStatus.getCompletedAt() : LocalDateTime.now()
-                );
-
-                log.info("분석 결과 저장 완료. jobId={}", jobId);
-
-            } catch (Exception e) {
-                log.error("분석 결과 저장 중 오류 발생. jobId={}", jobId, e);
-                // 원하면 실패 상태로 저장도 가능: analysis.setStatus(FAILED)
-            }
-        }
-    }
+//    @Transactional
+//    public void updatePendingAnalyses() {
+//        List<InstrumentAnalysis> pendingJobs =
+//            analysisRepository.findByStatus(AnalysisStatus.PENDING);
+//
+//        for (InstrumentAnalysis analysis : pendingJobs) {
+//            String jobId = analysis.getJobId();
+//
+//            try {
+//                JobStatusResponseDto jobStatus = musicAiClient.getJobResult(jobId);
+//
+//                if (!"SUCCEEDED".equalsIgnoreCase(jobStatus.getStatus())) {
+//                    log.info("아직 완료되지 않은 Job입니다. jobId={}, status={}", jobId, jobStatus.getStatus());
+//                    continue;
+//                }
+//
+//                if (jobStatus.getResult() == null || jobStatus.getResult().getResultJson() == null) {
+//                    log.warn("결과 필드가 비어있음. jobId={}", jobId);
+//                    continue;
+//                }
+//
+//                // 결과 파싱
+//                JobStatusResponseDto.Detection detection = objectMapper.readValue(
+//                    jobStatus.getResult().getResultJson(),
+//                    JobStatusResponseDto.Detection.class
+//                );
+//                jobStatus.setDetection(detection);
+//
+//                // JSON으로 변환
+//                String instrumentsJson = toJson(detection.getInstruments());
+//                String scoresJson = toJson(detection.getProbabilities());
+//                String thresholdsJson = toJson(detection.getThresholds());
+//
+//                // 분석 성공 업데이트
+//                analysis.updateSuccess(
+//                    instrumentsJson,
+//                    scoresJson,
+//                    thresholdsJson,
+//                    jobStatus.getCompletedAt() != null ? jobStatus.getCompletedAt() : LocalDateTime.now()
+//                );
+//
+//                log.info("분석 결과 저장 완료. jobId={}", jobId);
+//
+//            } catch (Exception e) {
+//                log.error("분석 결과 저장 중 오류 발생. jobId={}", jobId, e);
+//                // 원하면 실패 상태로 저장도 가능: analysis.setStatus(FAILED)
+//            }
+//        }
+//    }
 
     // ======================
     // 헬퍼 메서드 모음

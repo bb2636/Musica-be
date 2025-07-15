@@ -36,10 +36,10 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     // 클래스 ID별 평균 별점 목록 반환 (ClassCard 목록용) (여러개 클래스 별점순 필터링)
     // - classIds 파라미터는 현재 쿼리에 사용되지 않음 (필요하면 WHERE IN 추가 필요)
     @Query("""
-    SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))
-    FROM Review r
-    GROUP BY r.classes.id
-    """)
+        SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))
+        FROM Review r
+        GROUP BY r.classes.id
+        """)
     List<ClassesRatingAvgDto> getAverageRatingsByClassIds(List<Long> classIds);
 
     // 단일 클래스 ID의 평균 별점 (상세페이지 용도) - (FE) ClassCard 표시용
@@ -48,11 +48,19 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     // 5점 리뷰 중 최신순 6건 (user + class fetch 포함) - 메인 AI 카드용
     @Query("""
-    SELECT r FROM Review r
-    JOIN FETCH r.user u
-    JOIN FETCH r.classes c
-    WHERE r.rating = 5
-    ORDER BY r.createdAt DESC
-    """)
+        SELECT r FROM Review r
+        JOIN FETCH r.user u
+        JOIN FETCH r.classes c
+        WHERE r.rating = 5
+        ORDER BY r.createdAt DESC
+        """)
     List<Review> findTop6ByRatingIsFiveOrderByCreatedAtDesc(Pageable pageable);
+
+    @Query("""
+            SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))
+            FROM Review r
+            WHERE r.classes.id IN :classIds
+            GROUP BY r.classes.id
+        """)
+    List<ClassesRatingAvgDto> getAverageRatings(@Param("classIds") List<Long> classIds);
 }

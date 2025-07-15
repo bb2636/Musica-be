@@ -2,7 +2,8 @@ package com.example.musica_be.repository.classes;
 
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
-import com.example.musica_be.dto.classes.StudentCountDto;
+import com.example.musica_be.dto.classes.ClassesStudentCountDto;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -37,11 +38,11 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
                                    @Param("difficultyId") Long difficultyId);
 
     @Query("""
-            SELECT new com.example.musica_be.dto.classes.StudentCountDto(pi.classes.id, COUNT(pi))
+            SELECT new com.example.musica_be.dto.classes.ClassesStudentCountDto(pi.classes.id, COUNT(pi))
             FROM PaymentItem pi
             GROUP BY pi.classes.id
         """)
-    List<StudentCountDto> countStudentsByClassIds(List<Long> classIds);
+    List<ClassesStudentCountDto> countStudentsByClassIds(List<Long> classIds);
 
     // 관리자가 추천으로 지정한 클래스 (isRecommended = true) 중 최신순 상위 4개
     List<Classes> findTop4ByIsRecommendedTrueOrderByCreatedAtDesc();
@@ -54,4 +55,18 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
 
     // 무료 클래스 5개 조회 (최신순)
     List<Classes> findTop5ByClassPriceOrderByCreatedAtDesc(Integer classPrice);
+
+    // 검색 결과 페이징
+    @Query("""
+            SELECT c FROM Classes c
+            WHERE (:keyword IS NULL OR LOWER(c.title) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND (:difficultyId IS NULL OR c.difficulty.id = :difficultyId)
+        """)
+    Page<Classes> searchFiltered(
+        @Param("keyword") String keyword,
+        @Param("categoryId") Long categoryId,
+        @Param("difficultyId") Long difficultyId,
+        Pageable pageable
+    );
 }
