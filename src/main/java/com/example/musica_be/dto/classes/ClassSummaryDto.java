@@ -12,17 +12,44 @@ import lombok.Getter;
 @Builder
 @Getter
 public class ClassSummaryDto {
+
+    /** 클래스 ID */
     private Long id;
+
+    /** 클래스 제목 */
     private String title;
+
+    /** 클래스 카테고리 (예: 피아노, 기타 등) */
     private String category;
+
+    /** 클래스 난이도 (예: 초급, 중급, 고급) */
     private String difficulty;
+
+    /** 썸네일 이미지 URL */
     private String thumbnailUrl;
+
+    /** 클래스 가격 */
     private Integer classPrice;
+
+    /** 강사 이름 */
     private String instructorName;
+
+    /** 해당 클래스에 포함된 전체 강의 수 */
     private int totalLectureCount;
+
+    /** 이 클래스를 수강 중인 총 수강생 수 */
     private int studentCount;
+
+    /** 수강생들의 평균 별점 (0.0 ~ 5.0) */
     private double averageRating;
 
+    /**
+     * 클래스 엔티티와 통계 정보를 기반으로 ClassSummaryDto 생성
+     *
+     * @param c 클래스 엔티티
+     * @param stat 클래스 통계 정보 (null일 수 있음)
+     * @return 생성된 ClassSummaryDto
+     */
     public static ClassSummaryDto from(Classes c, ClassStatisticsDto stat) {
         return ClassSummaryDto.builder()
             .id(c.getId())
