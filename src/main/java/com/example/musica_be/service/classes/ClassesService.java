@@ -16,6 +16,8 @@ import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -333,9 +335,9 @@ public class ClassesService {
             return cmp;
         });
 
-        // 별점 포함 ClassCardDto로 변환, 상위 16개
+        // 별점 포함 ClassCardDto로 변환, 상위 20개
         return scoredList.stream()
-            .limit(16)
+            .limit(20)
             .map(dto -> {
                 Classes cls = dto.getClasses();
                 double rating = calculateAvgRating(cls.getId());
@@ -344,10 +346,10 @@ public class ClassesService {
             .collect(Collectors.toList());
     }
 
-    // 최신 클래스 (16개 limit)
+    // 최신 클래스 (20개 limit)
     @Transactional(readOnly = true)
     public List<ClassCardDto> getLatestClasses() {
-        List<Classes> latestClasses = classesRepository.findTop16ByOrderByCreatedAtDesc();
+        List<Classes> latestClasses = classesRepository.findTop20ByOrderByCreatedAtDesc();
 
         return latestClasses.stream()
             .map(cls -> {
@@ -463,6 +465,19 @@ public class ClassesService {
      */
     private double calculateAvgRating(Long classId) {
         return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ClassCardDto> getFreeClassCards() {
+        List<Classes> freeClasses = classesRepository.findTop5ByClassPriceOrderByCreatedAtDesc(0);
+
+        return freeClasses.stream()
+                .map(cls -> {
+                    double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId())
+                            .orElse(0.0);
+                    return ClassCardDto.from(cls, avgRating);
+                })
+                .collect(Collectors.toList());
     }
 
 }

@@ -1,5 +1,7 @@
 package com.example.musica_be.config;
 
+import com.example.musica_be.domain.user.User;
+import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.service.user.BlacklistService;
 import com.example.musica_be.util.JwtUtils;
 import jakarta.servlet.FilterChain;
@@ -22,10 +24,12 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+@RequiredArgsConstructor
 @Slf4j
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final BlacklistService blacklistService;
+    private final UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
@@ -47,7 +51,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            String userId = JwtUtils.getUserIdFromToken(token);
+            String userIdStr = JwtUtils.getUserIdFromToken(token);
+            Long userId = Long.valueOf(userIdStr);
+
+            // User 엔티티 조회
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+            log.info("userId: {}", userId);
+            System.out.println("userId from jwt: " + userId);
 
             // ✅ role 정보도 JWT에서 파싱
             String role = JwtUtils.getRoleFromToken(token);
@@ -59,7 +71,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // ✅ 사용자 ID + 권한으로 인증 객체 생성
             // 이렇게 해야 hasRole("INSTRUCTOR") 등의 인가 설정이 정상 작동함
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                userId, null, authorities);
+                    user, null, authorities);
 
             log.info("🔐 필터 들어옴: {}", request.getRequestURI()); // todo: 로그 코드 추가 - 강동균
             log.info("🔐 토큰: {}", token); // todo: 로그 코드 추가 - 강동균

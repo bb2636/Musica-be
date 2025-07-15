@@ -6,12 +6,15 @@ import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.review.ReviewRequestDto;
 import com.example.musica_be.dto.review.ReviewResponseDto;
+import com.example.musica_be.dto.review.ReviewSummaryCardDto;
 import com.example.musica_be.dto.review.UpdateReviewDto;
-import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -21,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,7 +100,7 @@ public class ReviewService {
                 .build();
     }
 
-    // 1. 내 후기 목록 조회
+    // 1. 마이페이지 후기 목록 조회
     @Transactional(readOnly = true)
     public List<ReviewResponseDto> getReviewsByUser(User user) {
         List<Review> reviews = reviewRepository.findAllByUser(user);
@@ -105,7 +109,7 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
-    // 2. 클래스별 후기 목록
+    // 2. 클래스별 후기 목록 조회
     @Transactional(readOnly = true)
     public List<ReviewResponseDto> getReviewsByClass(Long classId, Long currentUserId) {
         return reviewRepository.findAllByClassesIdWithUser(classId).stream()
@@ -130,7 +134,7 @@ public class ReviewService {
         return toDto(review, currentUserId);
     }
 
-    // DTO 변환 공통 로직
+    // 리뷰 엔티티 -> 응답 DTO 변환 (공통 로직)
     private ReviewResponseDto toDto(Review r, Long currentUserId) {
         return ReviewResponseDto.builder()
                 .reviewId(r.getReviewId())
@@ -146,11 +150,13 @@ public class ReviewService {
                 .build();
     }
 
+    // 시청률 계산 (향후 UserLog 기준으로 구현예정)
     private int getProgress(Long userId, Long lectureId) {
         // TODO: UserLog 테이블에서 실제 시청률을 조회하도록 변경
         return 0;
     }
 
+    // GPT용: 강의 ID 기준 전체 리뷰 댓글 원문 연결
     public String getRawCommentsByLecture(Long lectureId) {
         List<Review> reviews = reviewRepository.findAllByLectureIdWithUser(lectureId);
         return reviews.stream()
@@ -158,12 +164,26 @@ public class ReviewService {
                 .collect(Collectors.joining("\n"));
     }
 
+    // GPT용: 클래스 ID 기준 전체 리뷰 댓글 원문 연결
+    private String getRawCommentsByClass(Long classId) {
+        return reviewRepository.findAllByClassesIdWithUser(classId).stream()
+                .map(Review::getComment)
+                .collect(Collectors.joining("\n"));
+    }
+
+    // 유저 이름 마스킹 처리 (예: ej*******88)
+    private String maskUsername(String name) {
+        if (name.length() <= 2) return name.charAt(0) + "*";
+        return name.substring(0, 2) + "*".repeat(name.length() - 2);
+    }
+
+    // OpenAI GPT를 통해 수강 후기 요약 요청
     public String summarizeWithOpenAI(String inputText) {
 
         Map<String, Object> requestBody = Map.of(
                 "model", "gpt-4o",
                 "messages", List.of(
-                        Map.of("role", "system", "content", "다음 수강후기를 간단하게 요약해줘."),
+                        Map.of("role", "system", "content", "다음 수강후기를 간단하게 한줄 요약해줘."),
                         Map.of("role", "user", "content", inputText)
                 ),
                 "temperature", 0.7
@@ -194,6 +214,41 @@ public class ReviewService {
                 })
                 .onErrorReturn("OpenAI API 호출 실패")
                 .block();
+    }
+
+    // 메인페이지용: 최신 5점 리뷰 6개를 요약 카드 형태로 반환
+    @Transactional(readOnly = true)
+    public List<ReviewSummaryCardDto> getReviewSummaryCards() {
+        Pageable pageable = PageRequest.of(0, 6);
+        List<Review> reviews = reviewRepository.findTop6ByRatingIsFiveOrderByCreatedAtDesc(pageable);
+
+        return reviews.stream()
+                .map(r -> {
+                    String summary;
+                    String maskedUsername;
+
+                    // 1. GPT 요약 처리
+                    try {
+                        summary = summarizeWithOpenAI(r.getComment());
+                    } catch (Exception e) {
+                        summary = "[요약 실패: OpenAI 호출 오류]";
+                        e.printStackTrace();
+                    }
+
+                    // 2. 유저 이름 마스킹 처리
+                    try {
+                        String username = Optional.ofNullable(r.getUser())
+                                .map(User::getName)
+                                .orElseThrow(() -> new IllegalArgumentException("유저 정보 없음"));
+                        maskedUsername = maskUsername(username);
+                    } catch (Exception e) {
+                        maskedUsername = "[익명 사용자: 유저 정보 없음]";
+                        e.printStackTrace();
+                    }
+
+                    return ReviewSummaryCardDto.from(r, summary, maskedUsername);
+                })
+                .collect(Collectors.toList());
     }
 
 }
