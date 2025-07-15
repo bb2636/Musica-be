@@ -63,4 +63,10 @@ public class User {
     public boolean isInstructorApproved() {
         return this.role == Role.INSTRUCTOR && this.isApproved;
     }
+
+    //관리자용 - 강사 승인 상태
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
+
 }

@@ -1,5 +1,6 @@
 package com.example.musica_be.repository.user;
 
+import com.example.musica_be.domain.user.ApprovalStatus;
 import com.example.musica_be.domain.user.Role;
 import com.example.musica_be.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,5 +15,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByEmail(String email);
 
     //관리자용(강사 승인)
-    List<User> findByRoleAndIsApproved(Role role, boolean b);
+    List<User> findByRole(Role role);
+    List<User> findByRoleAndApprovalStatus(Role role, ApprovalStatus status);
 }
