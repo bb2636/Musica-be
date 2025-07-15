@@ -44,11 +44,14 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
         """)
     List<ClassesStudentCountDto> countStudentsByClassIds(List<Long> classIds);
 
-    // 관리자가 추천으로 지정한 클래스 (isRecommended = true) 중 최신순 상위 4개
-    List<Classes> findTop4ByIsRecommendedTrueOrderByCreatedAtDesc();
-
-    // 추천이 아닌 클래스 중 최신순 (isRecommended = false)
-    List<Classes> findByIsRecommendedFalseOrderByCreatedAtDesc();
+    // 유저의 levelId 기준 추천 클래스 (별점 평균 내림차순)
+    @Query("""
+    SELECT c FROM Classes c
+    WHERE c.difficulty.id = :levelId
+    ORDER BY
+        (SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.classes.id = c.id) DESC
+    """)
+    List<Classes> findRecommendedByLevelId(@Param("levelId") Long levelId, Pageable pageable);
 
     // 최신 클래스(20 limit 내림차순정렬)
     List<Classes> findTop20ByOrderByCreatedAtDesc();
