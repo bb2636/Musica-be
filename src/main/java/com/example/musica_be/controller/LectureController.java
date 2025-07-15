@@ -6,6 +6,7 @@ import com.example.musica_be.util.JwtUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,16 +23,13 @@ public class LectureController {
 
     // 강의 등록
     @PostMapping("/instructors/classes/{classId}/lectures")
-    public ResponseEntity<?> createLecture(
+    public ResponseEntity<LectureCreateResDto> createLecture(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId,
         @RequestBody @Valid LectureCreateReqDto dto
     ) {
-        Long lectureId = lectureService.createLecture(jwt, classId, dto);
-        return ResponseEntity.status(201).body(Map.of(
-            "lecture_id", lectureId,
-            "message", "강의 등록 완료"
-        ));
+        LectureCreateResDto response = lectureService.createLecture(jwt, classId, dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     // 강의 수정
@@ -102,17 +100,8 @@ public class LectureController {
         return ResponseEntity.ok(lectureService.getLectureListForInstructor(classId, userId));
     }
 
-    // 강의 시청
-//    @GetMapping("/lectures/{lectureId}/watch")
-//    public ResponseEntity<LectureWatchResDto> watchLecture(
-//        @RequestHeader("Authorization") String jwt,
-//        @PathVariable Long lectureId
-//    ) {
-//        return ResponseEntity.ok(lectureService.watchLecture(jwt, lectureId));
-//    }
-
     // 강의 순서 변경
-    @PatchMapping("/classes/{classId}/lectures/order")
+    @PatchMapping("/instructors/classes/{classId}/lectures/order")
     public ResponseEntity<Map<String, Object>> updateLectureOrder(
         @RequestHeader("Authorization") String jwt,
         @PathVariable Long classId,
@@ -153,7 +142,7 @@ public class LectureController {
     // todo: 테스트용 컨트롤러로 api 테스트 완료 후 주석 처리하거나 삭제해야 함
     @GetMapping("/lectures/view-url")
     public ResponseEntity<?> getDownloadUrl(@RequestParam String key) {
-        String url = lectureService.generateDownloadUrl(key);
+        String url = lectureService.generatePresignedDownloadUrl(key);
         return ResponseEntity.ok(Map.of("downloadUrl", url));
     }
 }

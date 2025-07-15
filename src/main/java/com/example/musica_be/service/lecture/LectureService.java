@@ -1,17 +1,29 @@
 package com.example.musica_be.service.lecture;
 
 import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.instrumentAnalysis.InstrumentAnalysis;
 import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.lecture.LectureProgress;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.instrumentAnalysis.AnalysisResultDto;
+import com.example.musica_be.dto.instrumentAnalysis.InstrumentAnalysisRequestDto;
+import com.example.musica_be.dto.instrumentAnalysis.JobCreateResponseDto;
+import com.example.musica_be.dto.instrumentAnalysis.JobStatusResponseDto;
 import com.example.musica_be.dto.lecture.*;
 import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.instrumentAnalysis.InstrumentAnalysisRepository;
 import com.example.musica_be.repository.lecture.LectureProgressRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.service.instrumentAnalysis.InstrumentAnalysisService;
+import com.example.musica_be.util.InstrumentCategoryMapper;
 import com.example.musica_be.util.JwtUtils;
+import com.example.musica_be.util.MusicAiClientImpl;
 import com.example.musica_be.util.S3PresignedUrl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,55 +36,103 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LectureService {
+    private static final ObjectMapper objectMapper = new ObjectMapper(); // 필드로 재사용
 
     private final LectureRepository lectureRepository;
     private final LectureProgressRepository lectureProgressRepository;
     private final ClassesRepository classesRepository;
     private final UserRepository userRepository;
     private final S3Presigner presigner;
+    private final InstrumentAnalysisService instrumentAnalysisService;
+    private final InstrumentAnalysisRepository instrumentAnalysisRepository;
+
+    private final MusicAiClientImpl musicAiClientImpl;
 
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-    // 강의 등록
+    /**
+     * [강의 등록 + 악기 분석 + 추천 카테고리 반환]
+     *
+     * 강사가 클래스에 강의를 등록할 때 사용하는 메서드입니다.
+     * 영상 또는 자료 중 하나 이상이 필수이며,
+     * 등록 후 자동으로 Music.AI API에 분석 요청을 보내고,
+     * 분석 결과를 기반으로 추천 가능한 카테고리 목록을 함께 반환합니다.
+     *
+     * 전체 흐름:
+     * 1. 강의 등록 요청에 대한 유효성 및 권한 검사
+     * 2. Lecture 엔티티 생성 및 저장
+     * 3. Presigned GET URL을 기반으로 악기 분석 요청 전송
+     * 4. 분석 결과 조회 및 DB 저장
+     * 5. 감지된 악기를 바탕으로 추천 카테고리 추출
+     *
+     * @param jwt     로그인한 강사의 JWT 토큰
+     * @param classId 등록할 클래스의 ID
+     * @param dto     강의 등록 요청 데이터
+     * @return 등록된 강의 ID 및 추천 카테고리 리스트가 포함된 응답 DTO
+     */
     @Transactional
-    public Long createLecture(String jwt, Long classId, LectureCreateReqDto dto) {
-        // 먼저 영상 또는 파일 중 하나는 필수라는 유효성 검사 진행
+    public LectureCreateResDto createLecture(String jwt, Long classId, LectureCreateReqDto dto) {
+        // 1. 유효성 검사
         if ((dto.getVideoUrl() == null || dto.getVideoUrl().isBlank()) &&
             (dto.getFileUrl() == null || dto.getFileUrl().isBlank())) {
             throw new IllegalArgumentException("강의 영상(videoUrl) 또는 강의 자료(fileUrl) 중 하나는 반드시 포함되어야 합니다.");
         }
 
-        // 사용자 아이디 추출 (userId)
+        // 2. 사용자 권한 검사
         Long userId = JwtUtils.extractUserId(jwt);
-
-        // 클래스 존재 여부 확인
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스가 존재하지 않습니다."));
-        // 강의 등록 권한 확인 (해당 클래스의 강사인지)
         validateInstructor(classes, userId);
-        // videoObjectKey 추출
-        // videoObjectKey 로 나중에 Presigned GET URL 생성 가능
-        String videoUrl = dto.getVideoUrl(); // ex: https://musica-test-bk.s3.amazonaws.com/lectures/uuid_sample.mp4
-        String videoObjectKey = extractVideoObjectKey(videoUrl);
-        // fileObjectKey 추출
-        String fileUrl = dto.getFileUrl(); // ex: https://musica-test-bk.s3.amazonaws.com/lectures/uuid_sample.pdf
-        String fileObjectKey = extractVideoObjectKey(fileUrl);
 
-        // 강의 엔티티 생성
+        // 3. S3 ObjectKey 추출
+        String videoObjectKey = extractVideoObjectKey(dto.getVideoUrl());
+        String fileObjectKey = extractVideoObjectKey(dto.getFileUrl());
+
+        // 4. 강의 엔티티 저장
         Lecture lecture = Lecture.builder()
             .classes(classes)
             .title(dto.getTitle())
-            .videoUrl(dto.getVideoUrl()) // 프론트에서 전달받은 S3에 저장한 객체의 URL - 이 URL 로는 권한 문제로 시청 불가 (403)
-            .videoObjectKey(videoObjectKey) // Presigned GET URL 생성할 때 필요한 key 값 (영상 보여줄 때 사용)
-            .fileUrl(dto.getFileUrl()) // 프론트에서 전달받은 S3에 저장한 객체의 URL - 이 URL 로는 권한 문제로 파일 열람 불가 (403)
-            .fileObjectKey(fileObjectKey) // Presigned GET URL 생성할 때 필요한 key 값 (파일 보여줄 때 사용)
+            .videoUrl(dto.getVideoUrl())
+            .videoObjectKey(videoObjectKey)
+            .fileUrl(dto.getFileUrl())
+            .fileObjectKey(fileObjectKey)
             .lectureOrder(dto.getLectureOrder())
+            .duration(dto.getDuration())
             .build();
+        lectureRepository.save(lecture);
 
-        // DB 저장 및 ID 반환
-        return lectureRepository.save(lecture).getId();
+        // 기본값: 빈 리스트 (추천 카테고리 없음)
+        List<String> recommendedCategories = List.of();
+
+        // 5. videoUrl 이 있는 경우만 Music.AI 분석 요청
+        if (dto.getVideoUrl() != null && !dto.getVideoUrl().isBlank()) {
+            String s3DownloadUrl = generatePresignedDownloadUrl(videoObjectKey);
+            InstrumentAnalysisRequestDto analysisRequestDto = new InstrumentAnalysisRequestDto(lecture.getId(), s3DownloadUrl);
+
+            // [1] 분석 Job 생성
+            JobCreateResponseDto response = instrumentAnalysisService.requestAnalysis(analysisRequestDto);
+            String jobId = response.getId();
+
+            // [2] InstrumentAnalysis 직접 조회
+            InstrumentAnalysis analysis = instrumentAnalysisRepository.findByJobId(jobId)
+                .orElseThrow(() -> new IllegalStateException("jobId로 분석 정보를 찾을 수 없습니다."));
+
+            // [3] 분석 완료까지 대기 + 결과 파싱
+            AnalysisResultDto resultDto = instrumentAnalysisService.waitAndParse(analysis);
+
+            // [4] 감지된 악기로부터 추천 카테고리 추출
+            List<String> detectedInstruments = resultDto.getDetectedInstruments();
+            recommendedCategories = InstrumentCategoryMapper.toCategories(detectedInstruments);
+        }
+
+        // 6. 결과 반환
+        return LectureCreateResDto.builder()
+            .lectureId(lecture.getId())
+            .recommendedCategories(recommendedCategories)
+            .build();
     }
 
     // 강의 수정
@@ -80,18 +140,46 @@ public class LectureService {
     public void updateLecture(String jwt, Long lectureId, LectureUpdateReqDto dto) {
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 존재하는 강의인지 확인
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-        // 유저 권한 확인
+
         validateInstructor(lecture.getClasses(), userId);
+
+        if ((dto.getVideoUrl() == null || dto.getVideoUrl().isBlank()) &&
+            (dto.getFileUrl() == null || dto.getFileUrl().isBlank())) {
+            throw new IllegalArgumentException("강의 영상 또는 자료 중 하나는 필수입니다.");
+        }
+
+        boolean videoChanged = !Objects.equals(lecture.getVideoUrl(), dto.getVideoUrl());
+
+        String videoObjectKey = extractVideoObjectKey(dto.getVideoUrl());
+        String fileObjectKey = extractVideoObjectKey(dto.getFileUrl());
 
         lecture.update(
             dto.getTitle(),
             dto.getVideoUrl(),
-            dto.getSheetMusicUrl(),
-            dto.getLectureOrder()
+            dto.getFileUrl(),
+            dto.getLectureOrder(),
+            videoObjectKey,
+            fileObjectKey,
+            dto.getDuration()
         );
+
+        if (videoChanged && dto.getVideoUrl() != null && !dto.getVideoUrl().isBlank()) {
+            // 기존 분석 삭제
+            instrumentAnalysisRepository.deleteByLectureId(lecture.getId());
+
+            // 새 presigned URL로 분석 요청
+            String s3DownloadUrl = generatePresignedDownloadUrl(videoObjectKey);
+            JobCreateResponseDto response = instrumentAnalysisService.requestAnalysis(
+                new InstrumentAnalysisRequestDto(lecture.getId(), s3DownloadUrl)
+            );
+
+            // 결과 기다리고 파싱
+            InstrumentAnalysis analysis = instrumentAnalysisRepository.findByJobId(response.getId())
+                .orElseThrow(() -> new IllegalStateException("분석 정보 없음"));
+            instrumentAnalysisService.waitAndParse(analysis);
+        }
     }
 
     // 강의 삭제
@@ -118,11 +206,11 @@ public class LectureService {
         // 2. Presigned URL 생성
         String videoUrl = null;
         if (lecture.getVideoObjectKey() != null && !lecture.getVideoObjectKey().isBlank()) {
-            videoUrl = generateDownloadUrl(lecture.getVideoObjectKey());
+            videoUrl = generatePresignedDownloadUrl(lecture.getVideoObjectKey());
         }
         String fileUrl = null;
         if (lecture.getFileObjectKey() != null && !lecture.getFileObjectKey().isBlank()) {
-            fileUrl = generateDownloadUrl(lecture.getFileObjectKey());
+            fileUrl = generatePresignedDownloadUrl(lecture.getFileObjectKey());
         }
 
         // 3. jwt가 없거나 빈 문자열이면 비로그인 사용자 처리 → 시청 기록 없음
@@ -142,6 +230,41 @@ public class LectureService {
 
         // 6. DTO로 변환
         return LectureDetailResDto.from(lecture, progress, videoUrl, fileUrl);
+    }
+
+    // 특정 사용자의 특정 강의에 대한 시청 시간을 저장하거나 갱신하는 로직
+    @Transactional
+    public void saveProgress(String jwt, Long lectureId, LectureProgressSaveReqDto dto) {
+        // 1. JWT 토큰에서 사용자 ID 추출
+        Long userId = JwtUtils.extractUserId(jwt);
+
+        // 2. 강의 ID로 강의 정보 조회 (없으면 예외 발생)
+        Lecture lecture = lectureRepository.findById(lectureId)
+            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
+
+        // 3. 사용자 ID로 사용자 정보 조회 (없으면 예외 발생)
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+
+        // 4. 기존 시청 기록 조회 (LectureProgress)
+        // - 이미 시청 이력이 있다면 가져오고
+        // - 없으면 새로운 객체 생성 (초기값: watchedSeconds=0, isCompleted=false)
+        LectureProgress progress = lectureProgressRepository
+            .findByUserAndLecture(user, lecture)
+            .orElse(LectureProgress.builder()
+                .user(user)
+                .lecture(lecture)
+                .watchedSeconds(0)
+                .isCompleted(false)
+                .build()
+            );
+
+        // 5. 시청 시간(watchedSeconds) 업데이트
+        // - 내부적으로 시청 완료 여부(isCompleted)도 자동 판단됨 (LectureProgress 도메인 메서드)
+        progress.updateProgress(dto.getWatchedSeconds());
+
+        // 6. 변경사항 저장 (기존이면 update, 신규면 insert)
+        lectureProgressRepository.save(progress);
     }
 
     // 강의 목록 조회
@@ -276,46 +399,32 @@ public class LectureService {
         return updatedLectureIds;
     }
 
-    // 특정 사용자의 특정 강의에 대한 시청 시간을 저장하거나 갱신하는 로직
-    @Transactional
-    public void saveProgress(String jwt, Long lectureId, LectureProgressSaveReqDto dto) {
-        // 1. JWT 토큰에서 사용자 ID 추출
-        Long userId = JwtUtils.extractUserId(jwt);
-
-        // 2. 강의 ID로 강의 정보 조회 (없으면 예외 발생)
-        Lecture lecture = lectureRepository.findById(lectureId)
-            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-
-        // 3. 사용자 ID로 사용자 정보 조회 (없으면 예외 발생)
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-        // 4. 기존 시청 기록 조회 (LectureProgress)
-        // - 이미 시청 이력이 있다면 가져오고
-        // - 없으면 새로운 객체 생성 (초기값: watchedSeconds=0, isCompleted=false)
-        LectureProgress progress = lectureProgressRepository
-            .findByUserAndLecture(user, lecture)
-            .orElse(LectureProgress.builder()
-                .user(user)
-                .lecture(lecture)
-                .watchedSeconds(0)
-                .isCompleted(false)
-                .build()
-            );
-
-        // 5. 시청 시간(watchedSeconds) 업데이트
-        // - 내부적으로 시청 완료 여부(isCompleted)도 자동 판단됨
-        progress.updateProgress(dto.getWatchedSeconds());
-
-        // 6. 변경사항 저장 (기존이면 update, 신규면 insert)
-        lectureProgressRepository.save(progress);
-    }
-
     // S3 Presigned URL 생성 (통합 메서드)
     // 강사가 강의 추가 페이지에서 등록 버튼을 클릭했을 때 실행되는 로직
+    /**
+     * 강의 등록 시 사용하는 통합 Presigned URL 생성 메서드
+     * <p>
+     * 프론트에서 강의 등록 버튼을 클릭했을 때, 강의 영상(mp4)과 부가 자료(pdf, jpg 등)에 대해
+     * S3에 업로드 가능한 Presigned URL을 생성하여 응답한다.
+     * <p>
+     * Presigned URL이란?
+     * - 클라이언트가 직접 S3에 파일을 업로드할 수 있도록 일정 시간 동안 유효한 URL을 생성해 주는 기능이다.
+     * - 일반적으로 서버가 업로드용 URL을 생성하여 프론트에 전달하고, 프론트는 해당 URL을 통해 파일을 직접 업로드함.
+     *
+     * @param videoName 업로드할 영상 파일명 (예: lecture.mp4) – null 또는 빈 문자열일 수 있음
+     * @param fileName  업로드할 일반 파일명 (예: sheet.pdf, image.png 등) – null 또는 빈 문자열일 수 있음
+     * @return 업로드 URL과 S3 객체 URL이 담긴 Map
+     * 예시:
+     * {
+     * "videoUploadUrl": "...",
+     * "videoUrl": "...",
+     * "fileUploadUrl": "...",
+     * "fileUrl": "..."
+     * }
+     */
     public Map<String, String> generatePresignedUploadUrls(String videoName, String fileName) {
         Map<String, String> result = new java.util.HashMap<>();
-        // 강의 영상인 경우 (mp4)
+        // 강의 영상인 경우 (mp4 만 허용)
         if (videoName != null && !videoName.isBlank()) {
             String videoKey = "lectures/" + UUID.randomUUID() + "_" + videoName;
             // 파일명에서 타입 추출
@@ -333,7 +442,7 @@ public class LectureService {
             result.put("videoUploadUrl", videoUploadUrl);
             result.put("videoUrl", videoUrl);
         }
-        // 영상 외 자료인 경우 (pdf, jpg, png ... )
+        // 영상 외 자료인 경우 (pdf, jpg, png 만 허용)
         if (fileName != null && !fileName.isBlank()) {
             String fileKey = "lectures/" + UUID.randomUUID() + "_" + fileName;
             // 파일명에서 타입 추출
@@ -356,6 +465,7 @@ public class LectureService {
     }
 
     // ====== 헬퍼 메서드 ======
+
     /**
      * 강의 등록 또는 수정 시, 해당 강의의 소유자(강사)가 요청한 것인지 확인하는 권한 검사 메서드
      *
@@ -370,8 +480,8 @@ public class LectureService {
     }
 
     /**
-     * 업로드 Presigned URL에서 객체 키(object key)를 추출하는 메서드
-     *
+     * S3 객체 URL 에서 객체 키(object key)를 추출하는 메서드
+     * <p>
      * 예: https://bucket.s3.amazonaws.com/lectures/abc.mp4?... → lectures/abc.mp4 추출
      *
      * @param url S3 Presigned upload URL
@@ -399,7 +509,7 @@ public class LectureService {
      * @return 시간 제한이 있는 Presigned 다운로드 URL
      * @throws IllegalArgumentException 객체 키가 비어있거나 null일 경우
      */
-    public String generateDownloadUrl(String key) {
+    public String generatePresignedDownloadUrl(String key) {
         if (key == null || key.isBlank()) {
             throw new IllegalArgumentException("S3 객체 키(key)는 null이거나 비어 있을 수 없습니다.");
         }
@@ -436,13 +546,14 @@ public class LectureService {
 
     /**
      * 시청 시간 기반 진행률 퍼센트를 계산하는 메서드
+     *
      * @param watchedSeconds 현재까지 시청한 시간(초)
-     * @param totalDuration 전체 강의 시간(초)
+     * @param totalDuration  전체 강의 시간(초)
      * @return 진행률 퍼센트 (0~100 사이 정수)
      */
     private int calculateProgressPercent(int watchedSeconds, int totalDuration) {
         if (totalDuration <= 0) return 0;
-        return Math.min(100, (int)((watchedSeconds / (double) totalDuration) * 100));
+        return Math.min(100, (int) ((watchedSeconds / (double) totalDuration) * 100));
     }
 
 }

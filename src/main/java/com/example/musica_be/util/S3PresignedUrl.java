@@ -42,17 +42,17 @@ public class S3PresignedUrl {
         String key,
         Duration duration
     ) {
-        GetObjectRequest getRequest = GetObjectRequest.builder()
+        GetObjectRequest getObjectRequest = GetObjectRequest.builder()
             .bucket(bucket)
             .key(key)
+//            .responseContentDisposition("attachment") // 파일을 미리보기가 아닌 다운로드하도록 강제
             .build();
 
         GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
             .signatureDuration(duration)
-            .getObjectRequest(getRequest)
+            .getObjectRequest(getObjectRequest)
             .build();
 
-        PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
-        return presignedRequest.url().toString();
+        return presigner.presignGetObject(presignRequest).url().toString();
     }
 }

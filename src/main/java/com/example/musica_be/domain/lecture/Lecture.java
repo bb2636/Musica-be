@@ -57,11 +57,16 @@ public class Lecture {
     private LocalDateTime createdAt;
 
     // Lecture.java
-    public void update(String title, String videoUrl, String fileUrl, int lectureOrder) {
+    public void update(String title, String videoUrl, String fileUrl,
+                       int lectureOrder, String videoObjectKey, String fileObjectKey,
+                       Integer duration) {
         this.title = title;
         this.videoUrl = videoUrl;
         this.fileUrl = fileUrl;
         this.lectureOrder = lectureOrder;
+        this.videoObjectKey = videoObjectKey;
+        this.fileObjectKey = fileObjectKey;
+        this.duration = duration;
     }
 
     public void changeOrder(int newOrder) {

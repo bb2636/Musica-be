@@ -40,16 +40,16 @@ public class LectureProgress {
 
     // 사용자의 강의 시청 진행 상황을 갱신하는 메서드
     public void updateProgress(int seconds) {
-        // 1. 사용자가 현재까지 시청한 시간을 갱신 (초 단위)
         this.watchedSeconds = seconds;
-
-        // 2. 마지막으로 시청한 시간을 현재 시각으로 업데이트
         this.lastWatchedAt = LocalDateTime.now();
 
-        // 3. 전체 강의 길이와 비교하여 시청 완료 여부 결정
-        // - 전체 길이 이상을 시청했다면 isCompleted = true
-        if (seconds >= this.lecture.getDuration()) {
+        // 전체 강의 길이의 95% 이상을 시청했으면 완료로 처리
+        int duration = this.lecture.getDuration();  // 강의 길이 (초)
+
+        if (duration > 0 && seconds >= duration * 0.95) {
             this.isCompleted = true;
+        } else {
+            this.isCompleted = false; // 기준 미달이면 false 처리 (갱신)
         }
     }
 }

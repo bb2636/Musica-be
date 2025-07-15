@@ -66,7 +66,7 @@ public class ClassesController {
     // 클래스 상세 조회
     @GetMapping("/classes/{classId}")
     public ResponseEntity<ClassDetailResDto> getClassDetail(
-        @RequestHeader("Authorization") String jwt,
+        @RequestHeader(value = "Authorization", required = false) String jwt,
         @PathVariable Long classId
     ) {
         return ResponseEntity.ok(classesService.getClassDetail(jwt, classId));
