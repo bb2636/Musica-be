@@ -26,7 +26,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final BlacklistService blacklistService;
     private final UserRepository userRepository;

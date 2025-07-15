@@ -1,5 +1,6 @@
 package com.example.musica_be.domain.classes;
 
+import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
 import jakarta.persistence.*;
@@ -7,6 +8,8 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "classes") // 테이블명도 classes로
@@ -49,6 +52,9 @@ public class Classes {
 
     @Column(nullable = false)
     private int viewCount;
+
+    @OneToMany(mappedBy = "classes", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Lecture> lectures = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

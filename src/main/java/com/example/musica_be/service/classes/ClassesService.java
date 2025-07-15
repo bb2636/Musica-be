@@ -16,16 +16,11 @@ import com.example.musica_be.repository.wishlist.WishlistRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -144,124 +139,72 @@ public class ClassesService {
     }
 
     // 클래스 목록 조회
-    // 1. 클래스 검색 결과 - 비회원 및 공개용
-    /**
-     * 클래스 검색 및 필터링 결과를 반환하는 메서드
-     *
-     * @param keyword      검색어 (제목, 설명 등에 포함된 키워드)
-     * @param categoryId   카테고리 ID 필터 (nullable)
-     * @param difficultyId 난이도(Level) ID 필터 (nullable)
-     * @param sortList     정렬 조건 리스트 (예: ["rating", "priceAsc"])
-     * @return 필터링 및 정렬된 클래스 요약 DTO 리스트
-     */
+    // 1. 클래스 검색 결과 - 공개용
     @Transactional(readOnly = true)
-    public List<ClassSummaryDto> searchFilteredClassList(
-        String keyword, Long categoryId, Long difficultyId, List<String> sortList
+    public Page<ClassSummaryDto> searchFilteredClassList(
+        String keyword,
+        Long categoryId,
+        Long difficultyId,
+        List<String> sortList,
+        int page,
+        int size
     ) {
-        // 1. 필터 조건(keyword, categoryId, difficultyId)에 해당하는 클래스 목록 조회
-        List<Classes> filtered = classesRepository.findByConditions(keyword, categoryId, difficultyId);
+        // 1. Sort는 엔티티 필드 기준으로만 세팅 (studentCount/rating 제외)
+        Sort sort = getSort(sortList);
+        Pageable pageable = PageRequest.of(page, size, sort);
 
-        // 2. 클래스별 수강생 수, 평균 별점 정보를 미리 Map 형태로 조회 (성능 최적화)
-        Map<Long, Integer> studentCountMap = getStudentCountMap(filtered);
-        Map<Long, Double> ratingMap = getRatingMap(filtered);
+        // 2. DB에서 클래스 페이지 조회 (정렬은 createdAt, viewCount, price 등만 가능)
+        Page<Classes> classPage = classesRepository.searchFiltered(keyword, categoryId, difficultyId, pageable);
 
-        // 3. 정렬 기준에 따라 Comparator 누적 생성
-        Comparator<Classes> comparator = null;
+        // 3. 통계 정보 수집
+        Map<Long, ClassStatisticsDto> statsMap = getClassStatisticsMap(classPage.getContent());
 
-        for (String sort : sortList) {
-            Comparator<Classes> current =
+        // 4. DTO 변환
+        List<ClassSummaryDto> dtoList = classPage.getContent().stream()
+            .map(c -> ClassSummaryDto.from(c, statsMap.get(c.getId())))
+            .collect(Collectors.toList());
 
-                // 각 정렬 조건별 Comparator 정의
-                switch (sort) {
-                    case "popular" -> // 조회수 많은 순
-                        current = Comparator.comparingInt(Classes::getViewCount).reversed();
+        // 5. 💡 수동 정렬 적용 (studentCount, averageRating)
+        for (String sortKey : sortList) {
+            switch (sortKey) {
+                case "students" -> dtoList.sort(Comparator
+                    .comparingInt(ClassSummaryDto::getStudentCount).reversed());
 
-                    case "priceAsc" -> // 가격 낮은 순
-                        current = Comparator.comparingInt(Classes::getClassPrice);
-
-                    case "priceDesc" -> // 가격 높은 순
-                        current = Comparator.comparingInt(Classes::getClassPrice).reversed();
-
-                    case "latest" -> // 최신 등록일 순
-                        current = Comparator.comparing(Classes::getCreatedAt).reversed();
-
-                    case "students" -> // 수강생 많은 순
-                        current = Comparator.comparingInt(
-                            (Classes c) -> studentCountMap.getOrDefault(c.getId(), 0)
-                        ).reversed();
-
-                    case "rating" // 평균 별점 높은 순
-                        -> current = Comparator.comparingDouble(
-                        (Classes c) -> ratingMap.getOrDefault(c.getId(), 0.0)
-                    ).reversed();
-                    default -> null;
-                };
-
-            if (current == null) {
-                continue;
-            }
-
-            // 기존 comparator와 현재 comparator를 연결 (우선순위대로 정렬)
-            if (comparator == null) {
-                comparator = current; // 첫 정렬 기준
-            } else {
-                comparator = comparator.thenComparing(current); // 이후 조건 이어붙이기
+                case "rating" -> dtoList.sort(Comparator
+                    .comparingDouble(ClassSummaryDto::getAverageRating).reversed());
             }
         }
 
-        // 4. 최종 comparator를 기준으로 정렬 수행
-        if (comparator != null) {
-            filtered.sort(comparator);
-        } else {
-            // 정렬 조건이 없을 경우 기본 정렬: 최신순
-            filtered.sort(Comparator.comparing(Classes::getCreatedAt).reversed());
-        }
-
-        // 5. 결과 클래스들을 DTO로 변환 (강의 수 포함)
-        return filtered.stream()
-            .map(c -> {
-                int lectureCount = lectureRepository.countByClassesId(c.getId());
-                return ClassSummaryDto.from(c, lectureCount);
-            })
-            .toList();
+        // 6. 정렬된 리스트로 PageImpl 생성 후 반환
+        return new PageImpl<>(dtoList, pageable, classPage.getTotalElements());
     }
 
     // 2. 수강생용 - 본인이 수강하는 클래스만
     @Transactional(readOnly = true)
     public List<ClassSummaryDto> getClassListForStudent(String jwt) {
-        // 1. JWT 에서 유저 ID 추출
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 2. 유저가 결제한 클래스 목록 조회 (취소된 결제 제외)
         List<Classes> enrolledClasses = classesRepository.findEnrolledClassesByUserId(userId);
 
-        // 3. 각 클래스에 대해 강의 수 조회 후 DTO 로 변환
+        Map<Long, ClassStatisticsDto> statsMap = getClassStatisticsMap(enrolledClasses);
+
         return enrolledClasses.stream()
-            .map(c -> {
-                int lectureCount = lectureRepository.countByClassesId(c.getId());
-                return ClassSummaryDto.from(c, lectureCount);
-            })
+            .map(c -> ClassSummaryDto.from(c, statsMap.get(c.getId())))
             .toList();
     }
 
     // 3. 강사용 - 본인이 올린 클래스만
     @Transactional(readOnly = true)
     public List<ClassSummaryDto> getClassListForInstructor(String jwt) {
-        // 1. 유저가 강사인지 확인
         validateInstructorByRole(jwt);
-
-        // 2. JWT 에서 userId 추출
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 3. 강사가 등록한 클래스 목록 조회
         List<Classes> instructorClasses = classesRepository.findByInstructorId(userId);
 
-        // 4. 각 클래스에 대한 강의 수를 조회한 후 DTO 로 변환
+        Map<Long, ClassStatisticsDto> statsMap = getClassStatisticsMap(instructorClasses);
+
         return instructorClasses.stream()
-            .map(c -> {
-                int lectureCount = lectureRepository.countByClassesId(c.getId());
-                return ClassSummaryDto.from(c, lectureCount);
-            })
+            .map(c -> ClassSummaryDto.from(c, statsMap.get(c.getId())))
             .toList();
     }
 
@@ -408,8 +351,8 @@ public class ClassesService {
         return classesRepository.countStudentsByClassIds(
             classesList.stream().map(Classes::getId).toList()
         ).stream().collect(Collectors.toMap(
-            StudentCountDto::getClassId, // 클래스 ID를 key로
-            dto -> dto.getCount().intValue() // 수강생 수(Long)을 int로 변환해서 value로
+            ClassesStudentCountDto::getClassId, // 클래스 ID를 key로
+            dto -> dto.getStudentCount().intValue() // 수강생 수(Long)을 int로 변환해서 value로
         ));
     }
 
@@ -467,17 +410,109 @@ public class ClassesService {
         return reviewRepository.calculateAverageRatingByClassId(classId).orElse(0.0);
     }
 
+    /**
+     * 무료 클래스 카드 리스트를 조회하는 메서드
+     * - 클래스 가격이 0원인 최신 클래스 5개를 조회
+     * - 각 클래스에 대해 평균 별점을 계산하여 DTO로 변환
+     *
+     * @return 무료 클래스 정보를 담은 ClassCardDto 리스트
+     */
     @Transactional(readOnly = true)
     public List<ClassCardDto> getFreeClassCards() {
+        // 가격이 0원인 클래스 중, 생성일 기준 내림차순으로 최대 5개 조회
         List<Classes> freeClasses = classesRepository.findTop5ByClassPriceOrderByCreatedAtDesc(0);
 
+        // 각 클래스에 대해 평균 별점을 계산하고, ClassCardDto로 변환
         return freeClasses.stream()
-                .map(cls -> {
-                    double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId())
-                            .orElse(0.0);
-                    return ClassCardDto.from(cls, avgRating);
-                })
-                .collect(Collectors.toList());
+            .map(cls -> {
+                double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId())
+                    .orElse(0.0); // 별점이 없을 경우 기본값 0.0
+                return ClassCardDto.from(cls, avgRating); // DTO로 변환
+            })
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 정렬 조건 리스트를 기반으로 Spring Data의 Sort 객체를 생성하는 메서드
+     * - 프론트엔드에서 전달받은 정렬 조건 문자열을 기준으로 정렬 순서를 정의
+     *
+     * 지원하는 정렬 옵션:
+     * - "popular": 조회수(viewCount) 내림차순
+     * - "priceAsc": 가격(classPrice) 오름차순
+     * - "priceDesc": 가격(classPrice) 내림차순
+     * - "latest": 최신순(createdAt) 내림차순
+     * - "students": 수강생 수(studentCount) 내림차순 → 해당 컬럼이 Entity에 존재해야 함
+     * - "rating": 평균 별점(averageRating) 내림차순 → 해당 컬럼이 Entity에 존재해야 함
+     *
+     * @param sortList 정렬 기준 문자열 리스트
+     * @return 적용할 정렬 조건을 포함한 Sort 객체
+     */
+    private Sort getSort(List<String> sortList) {
+        List<Sort.Order> orders = new ArrayList<>();
+
+        for (String sort : sortList) {
+            switch (sort) {
+                case "popular" -> orders.add(Sort.Order.desc("viewCount"));
+                case "priceAsc" -> orders.add(Sort.Order.asc("classPrice"));
+                case "priceDesc" -> orders.add(Sort.Order.desc("classPrice"));
+                case "latest" -> orders.add(Sort.Order.desc("createdAt"));
+            }
+        }
+
+        return Sort.by(orders);
+    }
+
+    /**
+     * 주어진 클래스 리스트에 대한 통계 정보를 계산하여 매핑(Map)으로 반환합니다.
+     *
+     * 반환되는 통계 정보(ClassStatisticsDto)는 클래스 ID를 키로 가지며, 다음 항목을 포함합니다:
+     *  - lectureCount: 강의 수
+     *  - studentCount: 수강생 수 (PaymentItem 기반)
+     *  - averageRating: 평균 별점 (Review 기반)
+     *
+     * 이 메서드는 페이징 처리된 클래스 목록에 대해서만 호출되므로,
+     * 전체 클래스가 아닌 '현재 페이지에 노출된 클래스'에 대한 통계만 계산합니다.
+     * (=> 불필요한 전체 집계를 막고 성능을 최적화)
+     *
+     * @param classList 현재 페이지에 포함된 Classes 엔티티 목록
+     * @return 클래스 ID를 키로 하는 통계 정보 맵
+     */
+    private Map<Long, ClassStatisticsDto> getClassStatisticsMap(List<Classes> classList) {
+        // 1. 클래스 ID 목록 추출 (통계 쿼리의 대상)
+        List<Long> classIds = classList.stream()
+            .map(Classes::getId)
+            .toList();
+
+        // 2. 최종 반환할 통계 정보 Map (classId -> ClassStatisticsDto)
+        Map<Long, ClassStatisticsDto> resultMap = new HashMap<>();
+
+        // 3. 강의 수 조회: 각 클래스별 강의 개수를 group by 쿼리로 조회
+        List<ClassesLectureCountDto> lectureCounts = lectureRepository.countLecturesByClassIds(classIds);
+        for (ClassesLectureCountDto dto : lectureCounts) {
+            resultMap.put(dto.getClassId(), new ClassStatisticsDto(
+                dto.getClassId(),
+                dto.getLectureCount(),  // 강의 수
+                0L,                     // 초기 수강생 수
+                0.0                     // 초기 별점
+            ));
+        }
+
+        // 4. 수강생 수 조회: PaymentItem 테이블을 기반으로 각 클래스별 수강생 수 집계
+        List<ClassesStudentCountDto> studentCounts = paymentItemRepository.getStudentCounts(classIds);
+        for (ClassesStudentCountDto dto : studentCounts) {
+            // resultMap에 기존 값이 없다면 기본값으로 넣은 뒤, 수강생 수만 업데이트
+            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0))
+                .setStudentCount(dto.getStudentCount());
+        }
+
+        // 5. 평균 별점 조회: Review 테이블 기반으로 각 클래스별 평균 별점 집계
+        List<ClassesRatingAvgDto> averageRatings = reviewRepository.getAverageRatings(classIds);
+        for (ClassesRatingAvgDto dto : averageRatings) {
+            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0))
+                .setAverageRating(dto.getAverageRating());
+        }
+
+        return resultMap;
     }
 
 }
