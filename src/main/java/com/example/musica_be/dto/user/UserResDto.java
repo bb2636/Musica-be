@@ -22,7 +22,7 @@ public class UserResDto {
         this.name = user.getName();
         this.email = user.getEmail();
         this.role = user.getRole().name();  // Role Enum을 String으로 변환
-        this.level = user.getLevel().getName();  // Level의 이름 (예: Beginner, Intermediate, Advanced)
+        this.level = user.getLevel() != null ? user.getLevel().getName() : null;  // Level의 이름 (예: Beginner, Intermediate, Advanced)
     }
 
     // 추가된 생성자: 예외 메시지를 포함한 생성자

@@ -111,7 +111,7 @@ public class UserController {
             }
 
             // ✅ 2. RefreshToken DB에서 삭제
-            userService.deleteByUserId(user.getId());
+            userService.deleteByUser(user);
             log.info("Deleted RefreshToken for userId: {}", user.getId());
 
             return ResponseEntity.ok("Logged out successfully");

@@ -2,10 +2,7 @@ package com.example.musica_be.service.user;
 
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.Wishlist;
-import com.example.musica_be.domain.user.Level;
-import com.example.musica_be.domain.user.Role;
-import com.example.musica_be.domain.user.SocialAccount;
-import com.example.musica_be.domain.user.User;
+import com.example.musica_be.domain.user.*;
 import com.example.musica_be.dto.question.QuestionDto;
 import com.example.musica_be.dto.user.LoginReqDto;
 import com.example.musica_be.dto.user.RegisterReqDto;
@@ -103,6 +100,7 @@ public class UserService {
         user.setRole(Role.valueOf(registerReqDto.getRole()));
         user.setLevel(level); //(Beginner, Intermediate, Advanced)
         user.setCreatedAt(LocalDateTime.now());
+        user.setApprovalStatus(user.getRole() == Role.INSTRUCTOR ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED);
         user.setIsApproved(!registerReqDto.getRole().equals("INSTRUCTOR")); // 기본적으로 INSTRUCTOR는 승인되지 않음
 
         User savedUser = userRepository.save(user);
@@ -140,6 +138,7 @@ public class UserService {
         user.setName(name);
         user.setRole(userRole);
         user.setCreatedAt(LocalDateTime.now());
+        user.setApprovalStatus(userRole == Role.INSTRUCTOR ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED);
         user.setIsApproved(true);
 
         // ✅ 소셜 회원가입이므로 더미 비밀번호 입력
@@ -185,8 +184,8 @@ public class UserService {
         }
     }
     //로그아웃 시 리프레시 토큰 삭제
-    public void deleteByUserId(Long userId) {
-        refreshTokenRepository.deleteByUserId(userId);
+    public void deleteByUser(User user) {
+        refreshTokenRepository.deleteByUser(user);
     }
 
     public boolean existsByRefreshToken(String refreshToken) {

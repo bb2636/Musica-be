@@ -3,6 +3,7 @@ package com.example.musica_be.controller.user;
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.dto.category.CategoryReqDto;
 import com.example.musica_be.dto.user.LoginReqDto;
+import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.service.category.CategoryService;
 import com.example.musica_be.service.user.AdminService;
 import com.example.musica_be.domain.user.User;
@@ -10,6 +11,7 @@ import com.example.musica_be.service.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +25,19 @@ public class AdminController {
     private final AdminService adminService;
     private final CategoryService categoryService;
 
+    //관리자 마이페이지
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/admin/mypage")
+    public ResponseEntity<UserResDto> getAdminMypage(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(new UserResDto(user));
+    }
+    //전체 강사 상태 목록 확인
+    @GetMapping("/instructors")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<User>> getAllInstructors() {
+        List<User> instructors = adminService.getAllInstructors();
+        return ResponseEntity.ok(instructors);
+    }
     // 승인 대기 중인 강사 목록 조회
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/instructors/pending")

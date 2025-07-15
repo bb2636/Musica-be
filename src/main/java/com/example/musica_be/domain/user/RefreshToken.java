@@ -27,6 +27,11 @@ public class RefreshToken {
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
+    public RefreshToken(User user, String refreshToken) {
+        this.user = user;
+        this.refreshToken = refreshToken;
+    }
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
