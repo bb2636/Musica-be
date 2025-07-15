@@ -1,5 +1,6 @@
 package com.example.musica_be.controller.user;
 
+import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.user.SocialSignupReqDto;
 import com.example.musica_be.dto.user.UserResDto;
 import com.example.musica_be.service.user.UserService;
@@ -18,13 +19,15 @@ public class SocialAuthController {
     @PostMapping("/user/signup")
     public ResponseEntity<UserResDto> kakaoSignup(@RequestBody SocialSignupReqDto dto) {
         try {
-            UserResDto userResDto = userService.registerUserFromOAuth(
+            // ✅ 서비스는 User 객체만 반환
+            User user = userService.registerUserFromOAuth(
                     dto.getEmail(),
                     dto.getName(),
                     dto.getRole(),
                     dto.getLevelId()
             );
-            return ResponseEntity.ok(userResDto);
+
+            return ResponseEntity.ok(new UserResDto(user));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new UserResDto(e.getMessage()));
         }
