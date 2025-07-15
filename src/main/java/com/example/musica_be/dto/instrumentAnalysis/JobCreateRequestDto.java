@@ -1,10 +1,13 @@
 package com.example.musica_be.dto.instrumentAnalysis;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 
 @Getter
 @AllArgsConstructor
+@ToString
 public class JobCreateRequestDto {
     private String jobName;       // job 이름
     private String workflowSlug;  // workflow 의 slug 값
@@ -12,7 +15,9 @@ public class JobCreateRequestDto {
 
     @Getter
     @AllArgsConstructor
+    @ToString
     public static class JobParams {
-        private String VideoUrl;  // downloadUrl 값 (워크플로우의 Input 부분과 일치), 실제 분석할 파일의 다운로드 URL
+        @JsonProperty("VideoUrl")
+        private String videoUrl;  // downloadUrl 값 (워크플로우의 Input 부분과 일치), 실제 분석할 파일의 다운로드 URL
     }
 }

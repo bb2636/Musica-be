@@ -1,8 +1,10 @@
 package com.example.musica_be.repository.instrumentAnalysis;
 
+import com.example.musica_be.domain.instrumentAnalysis.AnalysisStatus;
 import com.example.musica_be.domain.instrumentAnalysis.InstrumentAnalysis;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface InstrumentAnalysisRepository extends JpaRepository<InstrumentAnalysis, Long> {
@@ -10,4 +12,6 @@ public interface InstrumentAnalysisRepository extends JpaRepository<InstrumentAn
     Optional<InstrumentAnalysis> findByJobId(String jobId);
     // existsByLectureId(Long lectureId) : 중복 분석 방지
     boolean existsByLectureId(Long lectureId);
+    List<InstrumentAnalysis> findByStatus(AnalysisStatus status);
+    void deleteByLectureId(Long id);
 }

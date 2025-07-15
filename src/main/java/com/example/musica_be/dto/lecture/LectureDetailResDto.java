@@ -10,8 +10,8 @@ import lombok.Getter;
 public class LectureDetailResDto {
     private Long id;
     private String title;
-    private String videoUrl; // Presigned URL
-    private String fileUrl;  // Presigned URL
+    private String videoUrl; // s3 영상 객체의 url (강의영상)
+    private String fileUrl; // s3 파일 객체의 url (강의자료)
     private Integer lectureOrder;
     private Integer duration; // 강의 영상 길이
     private Integer progress;

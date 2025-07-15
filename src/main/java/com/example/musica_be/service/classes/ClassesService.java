@@ -125,16 +125,24 @@ public class ClassesService {
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스를 찾을 수 없습니다."));
 
-        // 2. 사용자 조회
-        User user = userRepository.findById(JwtUtils.extractUserId(jwt))
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        // 2. 로그인 사용자 여부 확인
+        User user = null;
+        if (jwt != null && jwt.startsWith("Bearer ")) {
+            Long userId = JwtUtils.extractUserId(jwt);
+            if (userId != null) {
+                user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+            }
+        }
+
+        // 3. 사용자 정보 기반 추가 처리가 필요한 경우 분기 처리
+        // ex) 내가 찜한 클래스인지, 수강 중인지 등은 여기서 처리
 
         return ClassDetailResDto.from(classes);
     }
 
     // 클래스 목록 조회
     // 1. 클래스 검색 결과 - 비회원 및 공개용
-
     /**
      * 클래스 검색 및 필터링 결과를 반환하는 메서드
      *
