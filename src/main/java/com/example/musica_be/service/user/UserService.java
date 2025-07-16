@@ -1,5 +1,7 @@
 package com.example.musica_be.service.user;
 
+import com.example.musica_be.exception.CustomAuthException;
+import com.example.musica_be.exception.ErrorCode;
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.Wishlist;
 import com.example.musica_be.domain.user.*;
@@ -109,9 +111,9 @@ public class UserService {
 
     // OAuth2 로그인 후 받은 정보로 회원가입 처리
     public User registerUserFromOAuth(String email, String name, String role, Long levelId) {
-        Level level = null;
+        Level level;
 
-        // levelId 못받으면 자동으로 1L
+        // levelId 못 받으면 자동으로 1L
         try {
             level = levelRepository.findById(levelId)
                     .orElseThrow(() -> new IllegalArgumentException("Invalid levelId"));
@@ -127,19 +129,27 @@ public class UserService {
             userRole = Role.USER;
         }
 
-        // 이미 존재하면 그대로 반환
+        // ✅ 이미 존재하는 경우
         Optional<User> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
-            return existingUser.get();
+            User user = existingUser.get();
+
+            // ✅ 승인되지 않은 강사는 로그인 차단
+            if (user.getRole() == Role.INSTRUCTOR && !user.isApproved()) {
+                throw new CustomAuthException("관리자의 승인을 기다려 주세요.", ErrorCode.INSTRUCTOR_NOT_APPROVED);
+            }
+
+            return user;
         }
 
+        // 신규 사용자 등록
         User user = new User();
         user.setEmail(email);
         user.setName(name);
         user.setRole(userRole);
         user.setCreatedAt(LocalDateTime.now());
         user.setApprovalStatus(userRole == Role.INSTRUCTOR ? ApprovalStatus.PENDING : ApprovalStatus.APPROVED);
-        user.setIsApproved(true);
+        user.setIsApproved(userRole != Role.INSTRUCTOR); // 강사는 false, 나머지는 true
 
         // ✅ 소셜 회원가입이므로 더미 비밀번호 입력
         user.setPassword("social_login");
@@ -147,15 +157,26 @@ public class UserService {
         if (userRole == Role.USER) {
             user.setLevel(level);
         }
+
         return userRepository.save(user);
     }
-
 
     // 로그인
     public Map<String, String> login(LoginReqDto loginReqDto) {
         Optional<User> userOpt = userRepository.findByEmail(loginReqDto.getEmail());
         if (userOpt.isPresent()) {
             User user = userOpt.get();
+            if (userOpt.isEmpty()) {
+                throw new CustomAuthException("존재하지 않는 사용자입니다.", ErrorCode.USER_NOT_FOUND);
+            }
+            // 승인된 강사 여부 확인
+            if (user.getRole() == Role.INSTRUCTOR && !user.isApproved()) {
+                throw new CustomAuthException("관리자의 승인을 기다려 주세요.", ErrorCode.INSTRUCTOR_NOT_APPROVED);
+            }
+
+            if (!passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
+                throw new CustomAuthException("비밀번호가 올바르지 않습니다.", ErrorCode.INVALID_PASSWORD);
+            }
             // 비밀번호 검증
             if (passwordEncoder.matches(loginReqDto.getPassword(), user.getPassword())) {
                 // 로그인 성공, JWT 토큰 생성

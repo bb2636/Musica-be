@@ -15,6 +15,7 @@ public class UserResDto {
     private String role; // "USER" or "INSTRUCTOR" or "ADMIN"
     private String level; // 레벨 이름 (Beginner, Intermediate, Advanced)
     private String message;  // 예외 메시지 또는 추가적인 응답 메시지
+    private boolean isApproved;
 
     // User 객체를 받아서 DTO를 변환하는 생성자
     public UserResDto(User user) {
@@ -23,6 +24,7 @@ public class UserResDto {
         this.email = user.getEmail();
         this.role = user.getRole().name();  // Role Enum을 String으로 변환
         this.level = user.getLevel() != null ? user.getLevel().getName() : null;  // Level의 이름 (예: Beginner, Intermediate, Advanced)
+        this.isApproved = user.isApproved();
     }
 
     // 추가된 생성자: 예외 메시지를 포함한 생성자
