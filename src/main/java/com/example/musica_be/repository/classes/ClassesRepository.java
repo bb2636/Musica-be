@@ -46,11 +46,11 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
 
     // 유저의 levelId 기준 추천 클래스 (별점 평균 내림차순)
     @Query("""
-    SELECT c FROM Classes c
-    WHERE c.difficulty.id = :levelId
-    ORDER BY
-        (SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.classes.id = c.id) DESC
-    """)
+        SELECT c FROM Classes c
+        WHERE c.difficulty.id = :levelId
+        ORDER BY
+            (SELECT COALESCE(AVG(r.rating), 0.0) FROM Review r WHERE r.classes.id = c.id) DESC
+        """)
     List<Classes> findRecommendedByLevelId(@Param("levelId") Long levelId, Pageable pageable);
 
     // 최신 클래스(20 limit 내림차순정렬)
@@ -72,4 +72,15 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
         @Param("difficultyId") Long difficultyId,
         Pageable pageable
     );
+
+    // 강사의 클래스 수
+    int countByInstructorId(Long instructorId);
+
+    // 강사의 클래스에 등록된 총 수강생 수 (중복 제거 필요 시 distinct 사용)
+    @Query("""
+            SELECT COUNT(DISTINCT p.payment.user.id)
+            FROM PaymentItem p
+            WHERE p.classes.instructor.id = :instructorId
+        """)
+    int countDistinctStudentsByInstructorId(@Param("instructorId") Long instructorId);
 }

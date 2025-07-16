@@ -63,4 +63,20 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
             GROUP BY r.classes.id
         """)
     List<ClassesRatingAvgDto> getAverageRatings(@Param("classIds") List<Long> classIds);
+
+    @Query("""
+            SELECT COUNT(r)
+            FROM Review r
+            WHERE r.classes.instructor.id = :instructorId
+        """)
+    int countByInstructorId(@Param("instructorId") Long instructorId);
+
+    @Query("""
+            SELECT COALESCE(AVG(r.rating), 0.0)
+            FROM Review r
+            WHERE r.classes.instructor.id = :instructorId
+        """)
+    double averageRatingByInstructorId(@Param("instructorId") Long instructorId);
+
+    List<Review> findTop3ByClasses_Instructor_IdOrderByCreatedAtDesc(Long instructorId);
 }

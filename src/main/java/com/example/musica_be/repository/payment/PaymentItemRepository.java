@@ -34,5 +34,22 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
             GROUP BY p.classes.id
         """)
     List<ClassesStudentCountDto> getStudentCounts(@Param("classIds") List<Long> classIds);
+
     boolean existsByPayment_User_IdAndClasses_Id(Long userId, Long classesId);
+
+    @Query("""
+        SELECT COALESCE(SUM(p.amount), 0)
+        FROM PaymentItem p
+        WHERE p.classes.instructor.id = :instructorId
+        """)
+    int sumTotalRevenueByInstructorId(@Param("instructorId") Long instructorId);
+
+    @Query("""
+        SELECT COALESCE(SUM(p.amount), 0)
+        FROM PaymentItem p
+        WHERE p.classes.instructor.id = :instructorId
+        AND MONTH(p.payment.paidAt) = MONTH(CURRENT_DATE)
+        AND YEAR(p.payment.paidAt) = YEAR(CURRENT_DATE)
+        """)
+    int sumMonthlyRevenueByInstructorId(@Param("instructorId") Long instructorId);
 }
