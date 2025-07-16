@@ -12,6 +12,7 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +22,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)  // ✅ @PreAuthorize 활성화
 @Slf4j
 public class SecurityConfig {
 
@@ -29,9 +31,9 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
 
     public SecurityConfig(
-        JwtAuthenticationFilter jwtAuthenticationFilter,
-        @Lazy CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
-        CustomOAuth2UserService customOAuth2UserService) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            @Lazy CustomOAuth2SuccessHandler customOAuth2SuccessHandler,
+            CustomOAuth2UserService customOAuth2UserService) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.customOAuth2SuccessHandler = customOAuth2SuccessHandler;
         this.customOAuth2UserService = customOAuth2UserService;
@@ -45,18 +47,18 @@ public class SecurityConfig {
     @Bean
     public UserDetailsService userDetailsService() {
         return new InMemoryUserDetailsManager(
-            org.springframework.security.core.userdetails.User.withUsername("user")
-                .password(passwordEncoder().encode("password"))
-                .roles("USER")
-                .build(),
-            org.springframework.security.core.userdetails.User.withUsername("admin")
-                .password(passwordEncoder().encode("admin"))
-                .roles("ADMIN")
-                .build(),
-            org.springframework.security.core.userdetails.User.withUsername("instructor")
-                .password(passwordEncoder().encode("instructorPassword"))
-                .roles("INSTRUCTOR")
-                .build()
+                org.springframework.security.core.userdetails.User.withUsername("user")
+                        .password(passwordEncoder().encode("password"))
+                        .roles("USER")
+                        .build(),
+                org.springframework.security.core.userdetails.User.withUsername("admin")
+                        .password(passwordEncoder().encode("admin"))
+                        .roles("ADMIN")
+                        .build(),
+                org.springframework.security.core.userdetails.User.withUsername("instructor")
+                        .password(passwordEncoder().encode("instructorPassword"))
+                        .roles("INSTRUCTOR")
+                        .build()
         );
     }
 
@@ -70,83 +72,83 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .cors(Customizer.withDefaults())
-            .csrf(AbstractHttpConfigurer::disable)
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/users/register",
-                    "/api/auth/login",
-                    "/api/admin/login",
-                    "/api/users/**",
-                    "/api/dev/**", //개발용 임의 데이터 삽입 컨트롤러
-                    "/api/reviews/summary/lecture/**", //후기 요약 ai
-                    "/api/users/check-email", //회원가입 시 이메일 중복 체크
-                    "/api/levels", //회원가입 시 레벨 테이블 불러오기
-                    "/api/reviews/classes/**", //클래스 별 후기 전체 조회
-                    "/oauth2/**",
-                    "/oauth2/authorization/kakao", //카카오 로그인 용
-                    "/login/oauth2/**", //리다이렉션 url 허용
-                    "/oauth-success", // 프론트 리디렉션 용
-                    "/api/user/signup", //카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
-                    "/api/payment/cart/checkout", // 카트 결제 (토스 결제를 위한)
-                    "/api/main/**" // 메인페이지 (추천,인기,최신,후기요약 ai 등등)
-                ).permitAll()
-                // 메인페이지 클래스 추천 허용(GET)
-                .requestMatchers("/api/classes/recommend").hasRole("USER")
-                // 클래스 상세 조회 허용 (GET)
-                .requestMatchers(HttpMethod.GET, "/api/classes/**").permitAll()
-                // 클래스 검색 허용 (GET)
-                .requestMatchers(HttpMethod.GET, "/api/classes").permitAll()
-                // 강의 목록 조회 허용 (GET)
-                .requestMatchers(HttpMethod.GET, "/api/classes/*/lectures").permitAll()
-                // URL 경로를 역할별로 나눔
-                .requestMatchers("/api/instructors/**").hasRole("INSTRUCTOR") // todo: 필터 순서 변경(아래 users랑 위치 변경함) - 강동균
-                .requestMatchers("/api/users/**", "/api/auth/**").hasRole("USER")
-                .requestMatchers("/api/admins/**").hasRole("ADMIN")
-                .anyRequest().authenticated()
-            )
-            //인증 필요없는 요청 보낼 때 카카오 리디렉션 막기
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((request, response, authException) -> {
-                    log.warn("🔒 인증 실패: {}", request.getRequestURI()); // todo: 로그 코드 추가 - 강동균
-                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    response.getWriter().write("Unauthorized: Please provide valid JWT token");
-                })
-            )
-            // ✅ JWT 인증 필터 등록 (세션 방식과 독립적으로 작동)
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // 원래 코드
-//                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(Customizer.withDefaults())
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth -> auth
+                        // ✅ 공개 접근 허용
+                        .requestMatchers(
+                                "/api/users/register",
+                                "/api/auth/login",
+                                "/api/auth/refresh",  // ✅ refresh 토큰 엔드포인트 추가
+                                "/api/admin/login",  // 관리자 로그인은 공개
+                                "/api/dev/**", // 개발용 임의 데이터 삽입 컨트롤러
+                                "/api/reviews/summary/lecture/**", // 후기 요약 AI
+                                "/api/users/check-email", // 회원가입 시 이메일 중복 체크
+                                "/api/levels", // 회원가입 시 레벨 테이블 불러오기
+                                "/api/reviews/classes/**", // 클래스 별 후기 전체 조회
+                                "/oauth2/**",
+                                "/oauth2/authorization/kakao", // 카카오 로그인 용
+                                "/login/oauth2/**", // 리다이렉션 URL 허용
+                                "/oauth-success", // 프론트 리디렉션 용
+                                "/api/user/signup", // 카카오 회원가입 시 롤, 레벨 입력받는 컨트롤러
+                                "/api/payment/cart/checkout", // 카트 결제 (토스 결제를 위한)
+                                "/api/main/**" // 메인페이지 (추천,인기,최신,후기요약 AI 등등)
+                        ).permitAll()
 
-            // ✅ 소셜 로그인 설정 추가 (카카오) 기존 로직과 별개로 작동하기 위해 분리
-            .oauth2Login(oauth2 -> oauth2
-                .userInfoEndpoint(userInfo -> userInfo
-                    .userService(customOAuth2UserService)
+                        // ✅ 구체적인 경로를 먼저 배치 (우선순위 높음)
+                        .requestMatchers("/api/users/mypage").hasAnyRole("USER", "INSTRUCTOR", "ADMIN")
+
+                        // ✅ 관리자 전용
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // ✅ 강사 전용
+                        .requestMatchers("/api/instructors/**").hasRole("INSTRUCTOR")
+
+                        // 메인페이지 클래스 추천 허용(GET)
+                        .requestMatchers("/api/classes/recommend").hasRole("USER")
+                        // 클래스 상세 조회 허용 (GET)
+                        .requestMatchers(HttpMethod.GET, "/api/classes/**").permitAll()
+                        // 클래스 검색 허용 (GET)
+                        .requestMatchers(HttpMethod.GET, "/api/classes").permitAll()
+                        // 강의 목록 조회 허용 (GET)
+                        .requestMatchers(HttpMethod.GET, "/api/classes/*/lectures").permitAll()
+
+                        // ✅ 6. 나머지 사용자 API
+                        .requestMatchers("/api/users/**").hasAnyRole("USER", "INSTRUCTOR", "ADMIN")
+                        .requestMatchers("/api/auth/**").hasAnyRole("USER", "INSTRUCTOR", "ADMIN")
+
+                        .anyRequest().authenticated()
                 )
-                .successHandler(customOAuth2SuccessHandler)
-            );
+                // ✅ 예외 처리 개선
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            log.warn("🔒 인증 실패: {} - {}", request.getRequestURI(), authException.getMessage());
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"Unauthorized\",\"message\":\"인증이 필요합니다.\"}"
+                            );
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            log.warn("🚫 권한 부족: {} - {}", request.getRequestURI(), accessDeniedException.getMessage());
+                            response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write(
+                                    "{\"error\":\"Forbidden\",\"message\":\"권한이 부족합니다.\"}"
+                            );
+                        })
+                )
+                // ✅ JWT 인증 필터 등록
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // ✅ 소셜 로그인 설정 추가 (카카오)
+                .oauth2Login(oauth2 -> oauth2
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(customOAuth2SuccessHandler)
+                );
 
         return http.build();
     }
-//    @Bean
-//    public InMemoryClientRegistrationRepository clientRegistrationRepository() {
-//        if (kakaoConfig.getClientId() == null || kakaoConfig.getClientId().isEmpty()) {
-//            throw new IllegalStateException("Kakao clientId cannot be empty");
-//        }
-//
-//        ClientRegistration kakao = ClientRegistration.withRegistrationId("kakao")
-//                .clientId(kakaoConfig.getClientId())
-//                .clientSecret(kakaoConfig.getClientSecret())
-//                .redirectUri("{baseUrl}/api/auth/login/oauth2/code/{registrationId}")
-//                .authorizationUri("https://kauth.kakao.com/oauth/authorize")
-//                .tokenUri("https://kauth.kakao.com/oauth/token")
-//                .userInfoUri("https://kapi.kakao.com/v2/user/me")
-//                .userNameAttributeName("id")
-//                .clientName("Kakao")
-//                .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
-//                .build();
-//
-//        return new InMemoryClientRegistrationRepository(kakao);
-//    }
 }
-

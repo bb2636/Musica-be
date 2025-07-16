@@ -147,7 +147,7 @@ public class UserController {
     }
 
     //사용자 마이페이지 정보 조회
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasAnyRole('USER', 'INSTRUCTOR', 'ADMIN')")
     @GetMapping("/users/mypage")
     public ResponseEntity<UserResDto> getUserMypage(@AuthenticationPrincipal User user) {
         // 사용자 정보 가져오기
