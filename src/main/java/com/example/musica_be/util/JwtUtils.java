@@ -10,7 +10,8 @@ import java.util.Date;
 public class JwtUtils {
   private static final String SECRET = "this-is-a-very-secure-key-that-is-at-least-64-bytes-long-1234567890!";
   private static final Key SECRET_KEY = Keys.hmacShaKeyFor(SECRET.getBytes());
-  private static final long ACCESS_TOKEN_EXPIRATION_TIME = 3600_000;
+//  private static final long ACCESS_TOKEN_EXPIRATION_TIME = 3600_000;
+  private static final long ACCESS_TOKEN_EXPIRATION_TIME = 360000000;
 
   public static Long extractUserId(String jwtWithBearer) {
     try {
