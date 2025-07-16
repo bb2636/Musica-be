@@ -8,10 +8,10 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class PaymentSummaryDto {
-    private Long payment_id;
+    private Long paymentId;
     private String title;
     private String thumbnailUrl;
     private int amount;
     private String status;
-    private LocalDateTime paid_at;
+    private LocalDateTime paidAt;
 }

@@ -6,8 +6,9 @@ import lombok.Data;
 @Data
 @Builder
 public class EnrolledClassItemDto {
-  private Long payment_item_id;
-  private Long class_id;
+  private Long paymentItemId;
+  private String status;
+  private Long classId;
   private String title;
   private String thumbnailUrl;
   private String instructorName;

@@ -19,6 +19,8 @@ import com.example.musica_be.repository.payment.PaymentStatusRepository;
 import com.example.musica_be.repository.payment.PaymentTypeRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +33,7 @@ import java.util.*;
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
+  private static final Logger log = LoggerFactory.getLogger(PaymentService.class);
   private final PaymentRepository paymentRepository;
   private final PaymentItemRepository paymentItemRepository;
   private final CartRepository cartRepository;
@@ -102,6 +105,9 @@ public class PaymentService {
     Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     List<Payment> payments = paymentRepository.findAllByUserId(userId);
 
+    // paidAt 내림차순 정렬 (최근 → 과거)
+    payments.sort(Comparator.comparing(Payment::getPaidAt).reversed());
+
     List<PaymentSummaryDto> result = new ArrayList<>();
 
     for (Payment payment : payments) {
@@ -116,8 +122,14 @@ public class PaymentService {
         title += " 외 " + (items.size() - 1);
       }
 
-      PaymentSummaryDto dto = PaymentSummaryDto.builder().payment_id(payment.getId()).title(title).thumbnailUrl(firstClass.getThumbnailUrl()).amount(payment.getAmount()).status(String.valueOf(payment.getStatus())) // enum -> 문자열
-          .paid_at(payment.getPaidAt()).build();
+      PaymentSummaryDto dto = PaymentSummaryDto.builder()
+          .paymentId(payment.getId())
+          .title(title)
+          .thumbnailUrl(firstClass.getThumbnailUrl())
+          .amount(payment.getAmount())
+          .status(String.valueOf(payment.getStatus())) // enum → 문자열
+          .paidAt(payment.getPaidAt())
+          .build();
 
       result.add(dto);
     }
@@ -150,9 +162,10 @@ public class PaymentService {
       List<EnrolledClassItemDto> classList = items.stream().map(item -> {
         Classes classes = item.getClasses();
         return EnrolledClassItemDto.builder()
-            .payment_item_id(item.getId())
-            .class_id(classes.getId())
+            .paymentItemId(item.getId())
+            .classId(classes.getId())
             .title(classes.getTitle())
+            .status(item.getPaymentStatus().getName())
             .thumbnailUrl(classes.getThumbnailUrl())
             .instructorName(classes.getInstructor().getName())
             .amount(classes.getClassPrice())
@@ -160,34 +173,53 @@ public class PaymentService {
       }).toList();
 
       PaymentGroupDto groupDto = PaymentGroupDto.builder()
-          .payment_id(payment.getId())
+          .paymentId(payment.getId())
           .totalAmount(payment.getAmount())
-          .paid_at(payment.getPaidAt())
-          .classes(classList)
+          .paidAt(payment.getPaidAt())
+          .paymentItems(classList)
+          .status(payment.getStatus().getName())
           .build();
 
       result.add(groupDto);
     }
-
+    log.info(result.toString());
     return result;
   }
 
 
   @Transactional
-  public PaymentResponseDto tossCompletePayment(String paymentKey, String orderId, int amount, Long cartId) {
-    Optional<Cart> cart = cartRepository.findById(cartId);
-    if (cart.isEmpty()) throw new IllegalStateException("장바구니가 존재하지 않습니다.");
+  public PaymentResponseDto tossCompletePaymentByCartItemIds(String paymentKey, String orderId, int amount, List<Long> cartItemIds) {
+    List<CartItem> cartItems = cartItemRepository.findAllById(cartItemIds);
+    log.info("카트아이템 크기 "+cartItems.size());
+    if (cartItems.isEmpty()) {
+      throw new IllegalStateException("선택한 장바구니 항목이 존재하지 않습니다.");
+    }
 
-    List<CartItem> cartItems = cartItemRepository.findByCart(cart.orElse(null));
-    if (cartItems.isEmpty()) throw new IllegalStateException("장바구니가 비어 있습니다.");
+    for (CartItem item : cartItems) {
+      System.out.println("클래스 제목: " + item.getClasses().getTitle());
+      System.out.println("클래스 가격: " + item.getClasses().getClassPrice());
+      System.out.println("수량: " + item.getQuantity());
+    }
+
+    // 카트 검증: 모든 아이템이 동일한 Cart를 참조하는지 확인
+    Cart cart = cartItems.get(0).getCart();
+    boolean sameCart = cartItems.stream().allMatch(item -> item.getCart().getId().equals(cart.getId()));
+    if (!sameCart) {
+      throw new IllegalArgumentException("선택한 장바구니 항목들이 서로 다른 장바구니에 속해 있습니다.");
+    }
 
     // 총 결제 금액 계산
-    int totalAmount = cartItems.stream().mapToInt(item -> item.getClasses().getClassPrice()).sum();
+    int totalAmount = cartItems.stream()
+        .mapToInt(item -> item.getClasses().getClassPrice())
+        .sum();
+
+    log.info(String.valueOf(totalAmount));
 
     if (totalAmount != amount) {
       throw new IllegalArgumentException("금액 불일치");
     }
 
+    // Toss 결제 승인 요청
     Map<String, Object> requestBody = new HashMap<>();
     requestBody.put("paymentKey", paymentKey);
     requestBody.put("orderId", orderId);
@@ -200,29 +232,33 @@ public class PaymentService {
           .bodyValue(requestBody)
           .retrieve()
           .bodyToMono(PaymentConfirmResponse.class)
-          .block(); // 동기 처리 (비동기 처리 원하면 `.subscribe()` 등 사용)
+          .block();
     } catch (WebClientResponseException e) {
-      // 실패 응답 본문 로깅
       System.err.println("Toss 결제 승인 실패: " + e.getResponseBodyAsString());
       throw new RuntimeException("결제 승인 실패: " + e.getMessage());
     }
-    if (dto.getStatus().equals( "DONE")  ||  dto.getMethod().equals("카드")){
+
+    if (dto == null) {
+      throw new IllegalStateException("결제 응답이 null입니다.");
+    }
+
+    if ("DONE".equals(dto.getStatus()) || "카드".equals(dto.getMethod())) {
       dto.setStatus("PAID");
       dto.setMethod("CARD");
     }
+
     // Payment 생성
     Payment payment = new Payment();
-
-    assert dto != null;
     payment.setOrderId(dto.getOrderId());
     payment.setPaymentKey(dto.getPaymentKey());
-    payment.setUser(cart.get().getUser());
+    payment.setUser(cart.getUser());
     payment.setAmount(totalAmount);
     payment.setPaidAt(LocalDateTime.now());
     payment.setPayType(paymentTypeRepository.findByName(dto.getMethod())
-        .orElseThrow(() -> new IllegalArgumentException(dto.getStatus() + " 상태가 존재하지 않습니다.")));
+        .orElseThrow(() -> new IllegalArgumentException(dto.getMethod() + " 결제 수단이 존재하지 않습니다.")));
     payment.setStatus(paymentStatusRepository.findByName("PAID")
-        .orElseThrow(() -> new IllegalArgumentException("PAID 상태가 존재하지 않습니다."))); // enum or 객체
+        .orElseThrow(() -> new IllegalArgumentException("PAID 상태가 존재하지 않습니다.")));
+
     paymentRepository.save(payment);
 
     // PaymentItem 생성
@@ -236,12 +272,14 @@ public class PaymentService {
       paymentItemRepository.save(paymentItem);
     }
 
-    // Cart, CartItem 삭제
+    // 선택된 CartItem만 삭제
     cartItemRepository.deleteAll(cartItems);
-    cartRepository.delete(cart.get());
 
     // 응답 반환
-    return PaymentResponseDto.builder().status("success").message("결제가 완료되었습니다.").build();
+    return PaymentResponseDto.builder()
+        .status("success")
+        .message("선택한 항목의 결제가 완료되었습니다.")
+        .build();
   }
 
   @Transactional

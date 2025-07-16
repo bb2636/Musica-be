@@ -9,8 +9,9 @@ import java.util.List;
 @Data
 @Builder
 public class PaymentGroupDto {
-  private Long payment_id;
+  private Long paymentId;
   private int totalAmount;
-  private LocalDateTime paid_at;
-  private List<EnrolledClassItemDto> classes;
+  private LocalDateTime paidAt;
+  private String status;
+  private List<EnrolledClassItemDto> paymentItems;
 }

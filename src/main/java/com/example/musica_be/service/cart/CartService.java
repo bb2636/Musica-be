@@ -57,11 +57,13 @@ public class CartService {
     for (CartItem cartItem : cartItems) {
       Classes classes = cartItem.getClasses();
       CartItemDto dto = CartItemDto.fromClasses(classes);
+      dto.setCartItemId(cartItem.getId());
       totalPrice += classes.getClassPrice();
       cartItemDtoList.add(dto);
     }
 
     return CartDto.builder()
+        .CartId(cart.getId())
         .userId(userId)
         .totalPrice(totalPrice)
         .totalCount(cartItems.size())
