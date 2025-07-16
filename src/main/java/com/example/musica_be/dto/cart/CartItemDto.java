@@ -8,6 +8,7 @@ import lombok.Data;
 @Data
 @Builder
 public class CartItemDto {
+  private Long cartItemId;
   private Long classId;
   private String title;
   private String thumbnailUrl;

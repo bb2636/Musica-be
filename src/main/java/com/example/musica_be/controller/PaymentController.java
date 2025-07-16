@@ -27,10 +27,10 @@ public class PaymentController {
   @GetMapping("users/me/payments")
   public ResponseEntity<?> getGroupedPayments(
       @RequestHeader("Authorization") String jwt,
-      @RequestParam(value = "payment_id", required = false) Long reservationId) {
+      @RequestParam(value = "paymentId", required = false) Long paymentId) {
 
-    if (reservationId != null) {
-      List<PaymentGroupDto> groupResult = paymentService.getGroupedPayments(jwt, reservationId);
+    if (paymentId != null) {
+      List<PaymentGroupDto> groupResult = paymentService.getGroupedPayments(jwt, paymentId);
       return ResponseEntity.ok(groupResult);
     } else {
       List<PaymentSummaryDto> summaryResult = paymentService.getPaymentSummaries(jwt);
@@ -48,13 +48,13 @@ public class PaymentController {
   }
 
   // 결제 완료 처리 (장바구니 결제)
-  @GetMapping("/payment/cart/checkout")
+  @PostMapping("users/payment/cart/checkout")
   public ResponseEntity<PaymentResponseDto> completePayment(
       @RequestParam("paymentKey") String paymentKey,
       @RequestParam("orderId")String orderId,
       @RequestParam("amount")int amount,
-      @RequestParam("cartId") Long cartId) {
-    PaymentResponseDto response = paymentService.tossCompletePayment(paymentKey,orderId,amount,cartId);
+      @RequestParam("cartItemIds") List<Long> cartItemIds) {
+    PaymentResponseDto response = paymentService.tossCompletePaymentByCartItemIds(paymentKey,orderId,amount,cartItemIds);
     return ResponseEntity.ok(response);
   }
 }
