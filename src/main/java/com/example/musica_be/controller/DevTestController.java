@@ -1,5 +1,6 @@
 package com.example.musica_be.controller;
 
+import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.question.Question;
@@ -16,6 +17,7 @@ import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.qna.AnswerRepository;
 import com.example.musica_be.repository.qna.QuestionRepository;
+import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import jakarta.transaction.Transactional;
@@ -38,6 +40,7 @@ public class DevTestController {
     private final AnswerRepository answerRepository;
     private final LevelRepository levelRepository;
     private final CategoryRepository categoryRepository;
+    private final ReviewRepository reviewRepository;
 
     @PostMapping("/init-levels")
     public ResponseEntity<String> initLevels() {
@@ -135,4 +138,68 @@ public class DevTestController {
                         .build()
         );
     }
+
+    @PostMapping("/class")
+    @Transactional
+    public ResponseEntity<String> createClass(@RequestBody Classes req) {
+        // 임시 Instructor (inst@test.com)
+        User instructor = userRepository.findByEmail("inst@test.com")
+                .orElseThrow(() -> new IllegalArgumentException("강사 계정 없음"));
+        Level level = levelRepository.findById(req.getDifficulty().getId())
+                .orElseThrow(() -> new IllegalArgumentException("레벨 없음"));
+        Category category = categoryRepository.findById(req.getCategory().getId())
+                .orElseThrow(() -> new IllegalArgumentException("카테고리 없음"));
+
+        Classes saved = Classes.builder()
+                .title(req.getTitle())
+                .descriptionHtml(req.getDescriptionHtml())
+                .difficulty(level)
+                .category(category)
+                .instructor(instructor)
+                .classPrice(req.getClassPrice())
+                .build();
+
+        classesRepository.save(saved);
+        return ResponseEntity.ok("클래스 등록 완료 (ID: " + saved.getId() + ")");
+    }
+
+    @PostMapping("/lecture")
+    @Transactional
+    public ResponseEntity<String> createLecture(@RequestBody Lecture req) {
+        Classes targetClass = classesRepository.findById(req.getClasses().getId())
+                .orElseThrow(() -> new IllegalArgumentException("클래스 없음"));
+
+        Lecture saved = Lecture.builder()
+                .title(req.getTitle())
+                .videoUrl(req.getVideoUrl())
+                .fileUrl(req.getFileUrl())
+                .fileObjectKey(req.getFileObjectKey())
+                .lectureOrder(req.getLectureOrder())
+                .classes(targetClass)
+                .build();
+
+        lectureRepository.save(saved);
+        return ResponseEntity.ok("강의 등록 완료 (ID: " + saved.getId() + ")");
+    }
+
+    @PostMapping("/review")
+    @Transactional
+    public ResponseEntity<String> createReview(@RequestBody Review req) {
+        User user = userRepository.findById(req.getUser().getId())
+                .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+        Classes targetClass = classesRepository.findById(req.getClasses().getId())
+                .orElseThrow(() -> new IllegalArgumentException("클래스 없음"));
+
+        Review saved = Review.builder()
+                .user(user)
+                .classes(targetClass)
+                .rating(req.getRating())
+                .comment(req.getComment())
+                .build();
+
+        reviewRepository.save(saved);
+        return ResponseEntity.ok("후기 등록 완료 (ID: " + saved.getReviewId() + ")");
+    }
+
+
 }

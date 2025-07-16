@@ -6,6 +6,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Optional;
+
 @Getter
 @Builder
 @AllArgsConstructor
@@ -19,13 +21,32 @@ public class ClassCardDto {
     private double rating;
     private String categoryName;
 
-    public static ClassCardDto from(Classes cls, double rating) {
+    // 통계용
+    private int ratingCount;
+    private int studentCount;
+
+    public static ClassCardDto from(Classes cls, ClassCardStatisticsDto stats) {
+        if (stats == null || stats.isEmpty()) {
+            return ClassCardDto.builder()
+                    .id(cls.getId())
+                    .title(cls.getTitle())
+                    .thumbnailUrl(cls.getThumbnailUrl())
+                    .price(cls.getClassPrice())
+                    .rating(0.0)
+                    .ratingCount(0)
+                    .studentCount(0)
+                    .categoryName(cls.getCategory().getDisplayName())
+                    .build();
+        }
+
         return ClassCardDto.builder()
                 .id(cls.getId())
                 .title(cls.getTitle())
                 .thumbnailUrl(cls.getThumbnailUrl())
                 .price(cls.getClassPrice())
-                .rating(rating)
+                .rating(Optional.ofNullable(stats.getAverageRating()).orElse(0.0))
+                .ratingCount(Optional.ofNullable(stats.getRatingCount()).orElse(0L).intValue())
+                .studentCount(Optional.ofNullable(stats.getStudentCount()).orElse(0L).intValue())
                 .categoryName(cls.getCategory().getDisplayName())
                 .build();
     }
