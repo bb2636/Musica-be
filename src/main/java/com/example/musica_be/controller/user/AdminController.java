@@ -20,7 +20,7 @@ import java.util.Map;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/admin")
+@RequestMapping("/api/admin")  // ✅ 이 부분이 /api/admin인지 확인!
 @RequiredArgsConstructor
 public class AdminController {
 
@@ -147,7 +147,7 @@ public class AdminController {
         }
     }
 
-    // ✅ 관리자 로그인 (기존 유지)
+    // ✅ 관리자 로그인 (반환 타입 수정)
     @PostMapping("/login")
     public ResponseEntity<Map<String, String>> adminLogin(@RequestBody LoginReqDto loginReqDto) {
         try {
@@ -160,12 +160,28 @@ public class AdminController {
         }
     }
 
-    // ✅ 카테고리 생성 (기존 유지)
+    // ✅ 카테고리 전체 조회 (GET 메서드 명시)
+    @GetMapping("/categories")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Category>> getAllCategories() {
+        try {
+            log.info("🔍 전체 카테고리 조회 요청 받음");
+            List<Category> categories = categoryService.getAllCategories();
+            log.info("🔍 전체 카테고리 조회 성공: {}개", categories.size());
+            return ResponseEntity.ok(categories);
+        } catch (Exception e) {
+            log.error("❌ 카테고리 조회 실패", e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+
+    // ✅ 카테고리 생성
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/categories")
     public ResponseEntity<?> createCategory(@RequestBody CategoryReqDto dto) {
         try {
-            log.info("카테고리 생성 요청: {}", dto.getName());
+            log.info("카테고리 생성 요청: name={}", dto.getName());
             Category saved = categoryService.createCategory(dto);
             return ResponseEntity.ok(saved);
         } catch (IllegalArgumentException e) {
@@ -177,7 +193,7 @@ public class AdminController {
         }
     }
 
-    // ✅ 카테고리 수정 (기존 유지)
+    // ✅ 카테고리 수정
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/categories/{id}")
     public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody CategoryReqDto dto) {
@@ -190,6 +206,47 @@ public class AdminController {
             return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("카테고리 수정 중 서버 오류: id={}", id, e);
+            return ResponseEntity.internalServerError().body(Map.of("message", "서버 에러 발생: " + e.getMessage()));
+        }
+    }
+
+    // ✅ 카테고리 삭제
+    @PreAuthorize("hasRole('ADMIN')")
+    @DeleteMapping("/categories/{id}")
+    public ResponseEntity<?> deleteCategory(@PathVariable Long id) {
+        try {
+            log.info("카테고리 삭제 요청: id={}", id);
+            categoryService.deleteCategory(id);
+            return ResponseEntity.ok(Map.of(
+                    "success", true,
+                    "message", "카테고리가 성공적으로 삭제되었습니다.",
+                    "id", id
+            ));
+        } catch (IllegalArgumentException e) {
+            log.warn("카테고리 삭제 실패: id={}, error={}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            log.warn("카테고리 삭제 실패 - 상태 오류: id={}, error={}", id, e.getMessage());
+            return ResponseEntity.status(409).body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("카테고리 삭제 중 서버 오류: id={}", id, e);
+            return ResponseEntity.internalServerError().body(Map.of("message", "서버 에러 발생: " + e.getMessage()));
+        }
+    }
+
+    // ✅ 카테고리 상태 토글
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/categories/{id}/toggle")
+    public ResponseEntity<?> toggleCategoryStatus(@PathVariable Long id) {
+        try {
+            log.info("카테고리 상태 토글 요청: id={}", id);
+            Category updated = categoryService.toggleCategoryStatus(id);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            log.warn("카테고리 상태 토글 실패: id={}, error={}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("카테고리 상태 토글 중 서버 오류: id={}", id, e);
             return ResponseEntity.internalServerError().body(Map.of("message", "서버 에러 발생: " + e.getMessage()));
         }
     }
