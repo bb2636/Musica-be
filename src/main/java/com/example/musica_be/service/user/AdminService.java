@@ -1,4 +1,4 @@
-package com.example.musica_be.service.user;// AdminService.java - 완전한 버전
+package com.example.musica_be.service.user;
 
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.user.InstructorDto;
@@ -9,9 +9,13 @@ import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,10 +23,55 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class AdminService {
+public class AdminService implements ApplicationRunner {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder; // 비밀번호 인코더 추가
+    private final PasswordEncoder passwordEncoder;
+
+    /**
+     * 🚀 애플리케이션 시작 시 기본 관리자 계정 자동 생성
+     */
+    @Override
+    @Transactional
+    public void run(ApplicationArguments args) throws Exception {
+        createDefaultAdminAccount();
+    }
+
+    /**
+     * 🔧 기본 관리자 계정 생성
+     */
+    private void createDefaultAdminAccount() {
+        String adminEmail = "admin@musica.com";
+
+        try {
+            // 기존 관리자 계정 확인
+            if (userRepository.findByEmail(adminEmail).isPresent()) {
+                log.info("✅ 기본 관리자 계정이 이미 존재합니다: {}", adminEmail);
+                return;
+            }
+
+            // 관리자 계정 생성
+            User adminUser = new User();
+            adminUser.setEmail(adminEmail);
+            adminUser.setName("System Admin");
+            adminUser.setPassword(passwordEncoder.encode("adminpassword"));
+            adminUser.setRole(Role.ADMIN);
+            adminUser.setApprovalStatus(ApprovalStatus.APPROVED);
+            adminUser.setIsApproved(true);
+            adminUser.setCreatedAt(LocalDateTime.now());
+            adminUser.setLevel(null); // 관리자는 레벨 불필요
+
+            userRepository.save(adminUser);
+
+            log.info("🎯 기본 관리자 계정이 생성되었습니다!");
+            log.info("📧 이메일: {}", adminEmail);
+            log.info("🔑 비밀번호: adminpassword");
+            log.info("⚠️  보안을 위해 초기 비밀번호를 변경해주세요!");
+
+        } catch (Exception e) {
+            log.error("❌ 기본 관리자 계정 생성 실패: {}", e.getMessage(), e);
+        }
+    }
 
     /**
      * 🔐 관리자 로그인 처리
@@ -64,9 +113,9 @@ public class AdminService {
         return Map.of(
                 "accessToken", accessToken,
                 "refreshToken", refreshToken,
-                "role", user.getRole().name(),  // ✅ role 정보 추가
-                "name", user.getName(),         // ✅ name 정보 추가
-                "email", user.getEmail()        // ✅ email 정보 추가
+                "role", user.getRole().name(),
+                "name", user.getName(),
+                "email", user.getEmail()
         );
     }
 
@@ -78,7 +127,15 @@ public class AdminService {
         log.info("모든 강사 목록 조회 (DTO 변환) 시작");
 
         try {
-            List<User> instructors = userRepository.findByRoleOrderByCreatedAtDesc(Role.INSTRUCTOR);
+            // Repository 메서드가 없다면 기본 메서드 사용
+            List<User> instructors;
+            try {
+                instructors = userRepository.findByRoleOrderByCreatedAtDesc(Role.INSTRUCTOR);
+            } catch (Exception e) {
+                // 메서드가 없다면 기본 방식 사용
+                instructors = userRepository.findByRole(Role.INSTRUCTOR);
+                instructors.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+            }
 
             List<InstructorDto> instructorDtos = instructors.stream()
                     .map(InstructorDto::from)
@@ -100,10 +157,17 @@ public class AdminService {
         log.info("승인 대기 강사 목록 조회 (DTO 변환) 시작");
 
         try {
-            List<User> pendingInstructors = userRepository.findByRoleAndApprovalStatusOrderByCreatedAtDesc(
-                    Role.INSTRUCTOR,
-                    ApprovalStatus.PENDING
-            );
+            // Repository 메서드가 없다면 기본 메서드 사용
+            List<User> pendingInstructors;
+            try {
+                pendingInstructors = userRepository.findByRoleAndApprovalStatusOrderByCreatedAtDesc(
+                        Role.INSTRUCTOR, ApprovalStatus.PENDING);
+            } catch (Exception e) {
+                // 메서드가 없다면 기본 방식 사용
+                pendingInstructors = userRepository.findByRoleAndApprovalStatus(
+                        Role.INSTRUCTOR, ApprovalStatus.PENDING);
+                pendingInstructors.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+            }
 
             List<InstructorDto> instructorDtos = pendingInstructors.stream()
                     .map(InstructorDto::from)
@@ -143,16 +207,16 @@ public class AdminService {
                 throw new IllegalStateException("이미 거절된 강사입니다.");
             }
 
-            // ✅ 승인 처리 (ApprovalStatus와 isApproved 둘 다 업데이트)
+            // 승인 처리
             instructor.setApprovalStatus(ApprovalStatus.APPROVED);
-            instructor.setIsApproved(true); // 기존 isApproved 필드도 함께 업데이트
+            instructor.setIsApproved(true);
             userRepository.save(instructor);
 
             log.info("강사 승인 완료: userId={}, email={}", userId, instructor.getEmail());
 
         } catch (Exception e) {
             log.error("강사 승인 처리 실패: userId={}", userId, e);
-            throw e; // 예외를 다시 던져서 컨트롤러에서 처리하도록
+            throw e;
         }
     }
 
@@ -181,17 +245,16 @@ public class AdminService {
                 throw new IllegalStateException("이미 거절된 강사입니다.");
             }
 
-            // ✅ 거절 처리 (ApprovalStatus와 isApproved 둘 다 업데이트)
+            // 거절 처리
             instructor.setApprovalStatus(ApprovalStatus.REJECTED);
-            instructor.setIsApproved(false); // 기존 isApproved 필드도 함께 업데이트
+            instructor.setIsApproved(false);
             userRepository.save(instructor);
-
 
             log.info("강사 거절 완료: userId={}, email={}", userId, instructor.getEmail());
 
         } catch (Exception e) {
             log.error("강사 거절 처리 실패: userId={}", userId, e);
-            throw e; // 예외를 다시 던져서 컨트롤러에서 처리하도록
+            throw e;
         }
     }
 
