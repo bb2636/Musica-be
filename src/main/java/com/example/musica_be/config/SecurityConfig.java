@@ -79,6 +79,7 @@ public class SecurityConfig {
                 .requestMatchers(
                     "/api/users/register",
                     "/api/auth/login",
+                    "/api/meta/**", // 강사 마이페이지 내 본인 클래스 검색
                     "/api/auth/refresh",  // ✅ refresh 토큰 엔드포인트 추가
                     "/api/admin/login",  // 관리자 로그인은 공개
                     "/api/dev/**", // 개발용 임의 데이터 삽입 컨트롤러
