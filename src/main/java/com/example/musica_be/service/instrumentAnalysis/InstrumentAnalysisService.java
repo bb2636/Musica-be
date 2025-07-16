@@ -57,7 +57,6 @@ public class InstrumentAnalysisService {
         JobCreateRequestDto.JobParams params = new JobCreateRequestDto.JobParams(request.getS3DownloadUrl());
         JobCreateRequestDto jobRequest = new JobCreateRequestDto(jobName, workflowSlug, params);
         JobCreateResponseDto jobResponse = musicAiClient.createJob(jobRequest);
-        // ✅ music.ai 에서 분석 요청은 잘 들어가는 것을 확인
 
         // 분석 요청 결과 로그 확인
         log.info("분석 결과 jod 아이디: {}", jobResponse);
@@ -232,8 +231,23 @@ public class InstrumentAnalysisService {
     private String guessContentType(String fileName) {
         if (fileName.endsWith(".mp4")) return "video/mp4";
         if (fileName.endsWith(".pdf")) return "application/pdf";
+        if (fileName.endsWith(".zip")) return "application/zip";
+        if (fileName.endsWith(".tar")) return "application/x-tar";
         if (fileName.endsWith(".png")) return "image/png";
         if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) return "image/jpeg";
+        if (fileName.endsWith(".gif")) return "image/gif";
+        if (fileName.endsWith(".bmp")) return "image/bmp";
+        if (fileName.endsWith(".webp")) return "image/webp";
+        if (fileName.endsWith(".txt")) return "text/plain";
+        if (fileName.endsWith(".csv")) return "text/csv";
+        if (fileName.endsWith(".doc")) return "application/msword";
+        if (fileName.endsWith(".docx")) return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        if (fileName.endsWith(".xls")) return "application/vnd.ms-excel";
+        if (fileName.endsWith(".xlsx")) return "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        if (fileName.endsWith(".ppt")) return "application/vnd.ms-powerpoint";
+        if (fileName.endsWith(".pptx")) return "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+        if (fileName.endsWith(".mp3")) return "audio/mpeg";
+        if (fileName.endsWith(".wav")) return "audio/wav";
         return "application/octet-stream"; // 알 수 없는 확장자일 경우 기본값
     }
 

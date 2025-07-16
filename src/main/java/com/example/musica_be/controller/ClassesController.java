@@ -82,22 +82,6 @@ public class ClassesController {
     //  - latest      : 최근 등록 순
     //  - students    : 수강생 많은 순
     //  - rating      : 별점 높은 순
-//    @GetMapping("/classes")
-//    public ResponseEntity<List<ClassSummaryDto>> getClassList(
-//        @RequestParam(required = false) String keyword,
-//        @RequestParam(required = false) Long categoryId,
-//        @RequestParam(required = false) Long difficultyId,
-//        @RequestParam(required = false, defaultValue = "latest") String sort // 예: "latest", "popular", "priceAsc", "students", "rating"
-//    ) {
-//        // GET /api/classes?sort=popular,priceAsc 같이 sort 조건이 여러 개 있을 때,
-//        // 문자열을 파싱해서 다중 정렬을 처리하기 위해 sortList 를 만들어 서비스 단으로 넘겨줌
-//        List<String> sortList = Arrays.stream(sort.split(","))
-//            .map(String::trim)
-//            .toList(); // Java 16 이상
-//
-//        List<ClassSummaryDto> result = classesService.searchFilteredClassList(keyword, categoryId, difficultyId, sortList);
-//        return ResponseEntity.ok(result);
-//    }
     @GetMapping("/classes")
     public ResponseEntity<Page<ClassSummaryDto>> getClassList(
         @RequestParam(required = false) String keyword,

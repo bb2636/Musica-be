@@ -2,13 +2,18 @@ package com.example.musica_be.service.classes;
 
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.lecture.Lecture;
+import com.example.musica_be.domain.lecture.LectureProgress;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.classes.*;
+import com.example.musica_be.dto.lecture.LectureSummaryDto;
 import com.example.musica_be.repository.classes.CategoryRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.lecture.LectureProgressRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
+import com.example.musica_be.repository.payment.PaymentRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
@@ -33,6 +38,7 @@ public class ClassesService {
     private final LevelRepository levelRepository;
     private final UserRepository userRepository;
     private final LectureRepository lectureRepository;
+    private final LectureProgressRepository lectureProgressRepository;
     private final CategoryRepository categoryRepository;
     private final ReviewRepository reviewRepository;
     private final PaymentItemRepository paymentItemRepository;
@@ -114,13 +120,13 @@ public class ClassesService {
     // 클래스 상세 조회
     @Transactional(readOnly = false)
     public ClassDetailResDto getClassDetail(String jwt, Long classId) {
-        increaseViewCount(classId); // 클래스 조회수 증가
+        increaseViewCount(classId); // 1. 조회수 증가
 
-        // 1. 클래스 조회
+        // 2. 클래스 조회
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스를 찾을 수 없습니다."));
 
-        // 2. 로그인 사용자 여부 확인
+        // 3. 로그인 사용자 조회
         User user = null;
         if (jwt != null && jwt.startsWith("Bearer ")) {
             Long userId = JwtUtils.extractUserId(jwt);
@@ -130,10 +136,70 @@ public class ClassesService {
             }
         }
 
-        // 3. 사용자 정보 기반 추가 처리가 필요한 경우 분기 처리
-        // ex) 내가 찜한 클래스인지, 수강 중인지 등은 여기서 처리
+        // 4. 강의 목록 생성
+        List<Lecture> lectures = classes.getLectures().stream()
+            .sorted(Comparator.comparing(Lecture::getLectureOrder))
+            .toList();
 
-        return ClassDetailResDto.from(classes);
+        List<LectureSummaryDto> lectureDtos;
+
+        // 5. 로그인 사용자인 경우: LectureProgress 함께 조회
+        if (user != null) {
+            // 한번에 전체 강의 진도 정보 조회
+            List<LectureProgress> progresses = lectureProgressRepository
+                .findAllByUserIdAndClassId(user.getId(), classId);
+
+            Map<Long, LectureProgress> progressMap = progresses.stream()
+                .collect(Collectors.toMap(p -> p.getLecture().getId(), p -> p));
+
+            lectureDtos = lectures.stream()
+                .map(lecture -> LectureSummaryDto.from(lecture, progressMap.get(lecture.getId())))
+                .collect(Collectors.toList());
+
+            // 수강 여부 및 전체 진도 계산
+            boolean isEnrolled = paymentItemRepository.existsByPayment_User_IdAndClasses_Id(user.getId(), classId);
+            int totalCount = lectures.size();
+            int completedCount = (int) progresses.stream().filter(LectureProgress::getIsCompleted).count();
+            double progressRate = totalCount > 0 ? ((double) completedCount / totalCount * 100) : 0.0;
+
+            ClassDetailResDto.UserClassStatus userStatus = ClassDetailResDto.UserClassStatus.builder()
+                .isEnrolled(isEnrolled)
+                .completedLectureCount(completedCount)
+                .totalLectureCount(totalCount)
+                .progressRate(progressRate)
+                .build();
+
+            return ClassDetailResDto.builder()
+                .id(classes.getId())
+                .title(classes.getTitle())
+                .descriptionHtml(classes.getDescriptionHtml())
+                .categoryName(classes.getCategory().getDisplayName())
+                .difficulty(classes.getDifficulty().getName())
+                .thumbnailUrl(classes.getThumbnailUrl())
+                .classPrice(classes.getClassPrice())
+                .instructorName(classes.getInstructor().getName())
+                .userClassStatus(userStatus)
+                .lectures(lectureDtos)
+                .build();
+        }
+
+        // 6. 비로그인 사용자용
+        lectureDtos = lectures.stream()
+            .map(LectureSummaryDto::from)
+            .collect(Collectors.toList());
+
+        return ClassDetailResDto.builder()
+            .id(classes.getId())
+            .title(classes.getTitle())
+            .descriptionHtml(classes.getDescriptionHtml())
+            .categoryName(classes.getCategory().getDisplayName())
+            .difficulty(classes.getDifficulty().getName())
+            .thumbnailUrl(classes.getThumbnailUrl())
+            .classPrice(classes.getClassPrice())
+            .instructorName(classes.getInstructor().getName())
+            .userClassStatus(null)
+            .lectures(lectureDtos)
+            .build();
     }
 
     // 클래스 목록 조회

@@ -34,4 +34,5 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
             GROUP BY p.classes.id
         """)
     List<ClassesStudentCountDto> getStudentCounts(@Param("classIds") List<Long> classIds);
+    boolean existsByPayment_User_IdAndClasses_Id(Long userId, Long classesId);
 }

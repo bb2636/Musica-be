@@ -61,7 +61,7 @@ public class LectureController {
 
     // 강의 상세 조회 (시청 정보 및 강의 세부 정보 포함)
     // - 사용자가 선택한 강의에 대한 상세 정보 + 시청 정보(watchedSeconds, isCompleted)를 함께 반환
-    // - 영상 재생을 위한 videoUrl, 악보 파일 다운로드 URL(fileUrl)도 포함
+    // - 영상 재생을 위한 videoUrl, 강의 자료 다운로드 URL(fileUrl)도 포함
     // - 프론트의 시청 페이지(새 창/모달) 구성 시 필요한 모든 정보를 한번에 제공
     @GetMapping("/lectures/{lectureId}")
     public ResponseEntity<LectureDetailResDto> getLecture(
