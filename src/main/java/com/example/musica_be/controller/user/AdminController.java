@@ -175,6 +175,7 @@ public class AdminController {
         }
     }
 
+
     // ✅ 카테고리 생성
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/categories")
