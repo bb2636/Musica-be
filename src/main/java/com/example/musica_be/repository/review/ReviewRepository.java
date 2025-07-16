@@ -2,6 +2,7 @@ package com.example.musica_be.repository.review;
 
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.classes.ClassCardStatisticsDto;
 import com.example.musica_be.dto.classes.ClassesRatingAvgDto;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -55,6 +56,17 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
         ORDER BY r.createdAt DESC
         """)
     List<Review> findTop6ByRatingIsFiveOrderByCreatedAtDesc(Pageable pageable);
+
+    // ReviewRepository 통계 쿼리
+    @Query("""
+    SELECT new com.example.musica_be.dto.classes.ClassCardStatisticsDto(
+        r.classes.id, 0L, 0L, AVG(r.rating), COUNT(r)
+    )
+    FROM Review r
+    WHERE r.classes.id IN :classIds
+    GROUP BY r.classes.id
+    """)
+    List<ClassCardStatisticsDto> getAvgRatings(@Param("classIds") List<Long> classIds);
 
     @Query("""
             SELECT new com.example.musica_be.dto.classes.ClassesRatingAvgDto(r.classes.id, AVG(r.rating))

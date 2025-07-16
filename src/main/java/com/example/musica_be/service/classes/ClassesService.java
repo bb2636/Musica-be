@@ -294,19 +294,9 @@ public class ClassesService {
             recommended.addAll(latest);
         }
 
-        // N+1 방지: 평균 별점 한 번에 조회
-        Map<Long, Double> avgMap = reviewRepository.getAverageRatings(
-                recommended.stream().map(Classes::getId).toList()
-        ).stream().collect(Collectors.toMap(
-                dto -> dto.getClassId(),
-                dto -> dto.getAverageRating()
-        ));
-
+        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(recommended);
         return recommended.stream()
-                .map(cls -> {
-                    double rating = avgMap.getOrDefault(cls.getId(), 0.0);
-                    return ClassCardDto.from(cls, rating);
-                })
+                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
                 .toList();
     }
 
@@ -316,45 +306,33 @@ public class ClassesService {
     public List<ClassCardDto> getPopularClasses() {
         List<Classes> allClasses = classesRepository.findAll();
 
-        List<ClassPopularityDto> scoredList = allClasses.stream().map(classes -> {
-            int orderCount = paymentItemRepository.countByClasses(classes); // 결제 수
-            int wishlistCount = wishlistRepository.countByClasses(classes); // 찜 수
-            int score = (orderCount * 2) + wishlistCount;
+        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(allClasses);
 
-            return new ClassPopularityDto(classes, score);
-        }).collect(Collectors.toList());
+        List<ClassPopularityDto> scoredList = allClasses.stream()
+                .map(c -> {
+                    ClassCardStatisticsDto stats = statsMap.getOrDefault(c.getId(), new ClassCardStatisticsDto());
+                    int score = (int) (stats.getStudentCount() * 2 + stats.getWishlistCount());
+                    return new ClassPopularityDto(c, score);
+                })
+                .sorted(Comparator.comparingInt(ClassPopularityDto::getScore).reversed()
+                        .thenComparing(a -> a.getClasses().getCreatedAt(), Comparator.reverseOrder()))
+                .limit(20)
+                .toList();
 
-        // 점수 내림차순, 같으면 createdAt 내림차순
-        scoredList.sort((a, b) -> {
-            int cmp = Integer.compare(b.getScore(), a.getScore());
-            if (cmp == 0) {
-                return b.getClasses().getCreatedAt().compareTo(a.getClasses().getCreatedAt());
-            }
-            return cmp;
-        });
-
-        // 별점 포함 ClassCardDto로 변환, 상위 20개
         return scoredList.stream()
-            .limit(20)
-            .map(dto -> {
-                Classes cls = dto.getClasses();
-                double rating = calculateAvgRating(cls.getId());
-                return ClassCardDto.from(cls, rating);
-            })
-            .collect(Collectors.toList());
+                .map(dto -> ClassCardDto.from(dto.getClasses(), statsMap.get(dto.getClasses().getId())))
+                .toList();
     }
 
     // 최신 클래스 (20개 limit)
     @Transactional(readOnly = true)
     public List<ClassCardDto> getLatestClasses() {
         List<Classes> latestClasses = classesRepository.findTop20ByOrderByCreatedAtDesc();
+        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(latestClasses);
 
         return latestClasses.stream()
-            .map(cls -> {
-                double rating = calculateAvgRating(cls.getId());
-                return ClassCardDto.from(cls, rating);
-            })
-            .collect(Collectors.toList());
+                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
+                .toList();
     }
 
     // ====== 헬퍼 메서드 ======
@@ -477,14 +455,11 @@ public class ClassesService {
         // 가격이 0원인 클래스 중, 생성일 기준 내림차순으로 최대 5개 조회
         List<Classes> freeClasses = classesRepository.findTop5ByClassPriceOrderByCreatedAtDesc(0);
 
-        // 각 클래스에 대해 평균 별점을 계산하고, ClassCardDto로 변환
+        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(freeClasses);
+
         return freeClasses.stream()
-            .map(cls -> {
-                double avgRating = reviewRepository.calculateAverageRatingByClassId(cls.getId())
-                    .orElse(0.0); // 별점이 없을 경우 기본값 0.0
-                return ClassCardDto.from(cls, avgRating); // DTO로 변환
-            })
-            .collect(Collectors.toList());
+                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
+                .toList();
     }
 
     /**
@@ -568,6 +543,29 @@ public class ClassesService {
         }
 
         return resultMap;
+    }
+
+    // 서비스 내부 공통 통계 조회 메서드
+    private Map<Long, ClassCardStatisticsDto> getClassCardStats(List<Classes> classList) {
+        List<Long> classIds = classList.stream().map(Classes::getId).toList();
+        Map<Long, ClassCardStatisticsDto> map = new HashMap<>();
+
+        paymentItemRepository.getStudentStatsForCard(classIds).forEach(dto ->
+                map.put(dto.getClassId(), new ClassCardStatisticsDto(dto.getClassId(), dto.getStudentCount(), 0L, 0.0, 0L))
+        );
+
+        wishlistRepository.getWishlistCounts(classIds).forEach(dto ->
+                map.computeIfAbsent(dto.getClassId(), id -> new ClassCardStatisticsDto(id, 0L, 0L, 0.0, 0L))
+                        .setWishlistCount(dto.getWishlistCount()));
+
+        reviewRepository.getAvgRatings(classIds).forEach(dto -> {
+            ClassCardStatisticsDto stats = map.computeIfAbsent(dto.getClassId(),
+                    id -> new ClassCardStatisticsDto(id, 0L, 0L, 0.0, 0L));
+            stats.setAverageRating(dto.getAverageRating());
+            stats.setRatingCount(dto.getRatingCount());
+        });
+
+        return map;
     }
 
 }
