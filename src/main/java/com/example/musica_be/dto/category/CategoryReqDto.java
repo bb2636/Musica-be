@@ -8,8 +8,13 @@ import lombok.*;
 @AllArgsConstructor
 @Builder
 public class CategoryReqDto {
-    private String code; // 카테고리 고유 코드 (예: PIANO, GUITAR)
+    // ✅ AdminController와의 호환성을 위한 getName() 메서드 확인
+    private String name; // ✅ code 대신 name 사용 (AdminController에서 dto.getName() 사용)
     private String displayName; // 사용자에게 보여질 이름 (예: 피아노, 기타)
     private int displayOrder; // 정렬 순서
     private boolean isActive; // 노출 여부 (true: 노출, false: 숨김)
+
+    // ✅ code 필드도 필요하다면 추가
+    private String code; // 카테고리 고유 코드 (예: PIANO, GUITAR)
+
 }

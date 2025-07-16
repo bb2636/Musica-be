@@ -40,46 +40,52 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = header.replace("Bearer ", "");
+        String token = header.substring(7);
 
-        // ✅ 블랙리스트에 있는지 체크
+        // ✅ 블랙리스트 체크
         if (blacklistService.isBlacklisted(token)) {
-            log.warn("Access token is blacklisted: {}", token);
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "This token is blacklisted.");
+            log.warn("🚫 블랙리스트된 토큰: {}", token.substring(0, 20) + "...");
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\":\"Blacklisted token\"}");
             return;
         }
 
         try {
+            // ✅ JWT에서 사용자 정보 추출
             String userIdStr = JwtUtils.getUserIdFromToken(token);
             Long userId = Long.valueOf(userIdStr);
-
-            // User 엔티티 조회
-            User user = userRepository.findById(userId)
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
-
-            log.info("userId: {}", userId);
-            System.out.println("userId from jwt: " + userId);
-
-            // ✅ role 정보도 JWT에서 파싱
             String role = JwtUtils.getRoleFromToken(token);
+            String email = JwtUtils.getEmailFromToken(token);
 
-            // ✅ 권한 정보를 포함한 인증 객체 생성
-            // 스프링 시큐리티는 내부적으로 "ROLE_" 접두사가 붙은 권한을 사용함
-            List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+            // ✅ 사용자 존재 확인
+            User user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다: " + userId));
 
-            // ✅ 사용자 ID + 권한으로 인증 객체 생성
-            // 이렇게 해야 hasRole("INSTRUCTOR") 등의 인가 설정이 정상 작동함
-            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    user, null, authorities);
+            // ✅ 권한 정보 생성 (ROLE_ 접두사 추가)
+            List<GrantedAuthority> authorities = List.of(
+                    new SimpleGrantedAuthority("ROLE_" + role)
+            );
 
-            log.info("🔐 필터 들어옴: {}", request.getRequestURI()); // todo: 로그 코드 추가 - 강동균
-            log.info("🔐 토큰: {}", token); // todo: 로그 코드 추가 - 강동균
-            log.info("🔐 userId: {}, role: {}", userId, role); // todo: 로그 코드 추가 - 강동균
+            // ✅ 인증 객체 생성
+            UsernamePasswordAuthenticationToken authentication =
+                    new UsernamePasswordAuthenticationToken(user, null, authorities);
 
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
             SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            // ✅ 디버그 로그
+            log.info("🔐 JWT 인증 성공 - URI: {}, userId: {}, email: {}, role: {}, authorities: {}",
+                    request.getRequestURI(), userId, email, role, authorities);
+
         } catch (Exception ex) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid Token");
+            log.error("🚫 JWT 인증 실패 - URI: {}, error: {}",
+                    request.getRequestURI(), ex.getMessage());
+
+            SecurityContextHolder.clearContext();
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            response.setContentType("application/json;charset=UTF-8");
+            response.getWriter().write("{\"error\":\"Invalid JWT token\"}");
             return;
         }
 

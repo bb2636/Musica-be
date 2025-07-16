@@ -195,7 +195,10 @@ public class UserService {
                 // 토큰을 반환
                 return Map.of(
                         "accessToken", accessToken,
-                        "refreshToken", refreshToken
+                        "refreshToken", refreshToken,
+                        "role", user.getRole().name(),
+                        "name", user.getName(),
+                        "email", user.getEmail()
                 );
             } else {
                 throw new IllegalArgumentException("Invalid password");
