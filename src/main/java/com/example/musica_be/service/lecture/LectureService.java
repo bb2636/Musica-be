@@ -426,7 +426,15 @@ public class LectureService {
         Map<String, String> result = new java.util.HashMap<>();
         // 강의 영상인 경우 (mp4 만 허용)
         if (videoName != null && !videoName.isBlank()) {
-            String videoKey = "lectures/" + UUID.randomUUID() + "_" + videoName;
+            String extension = "";
+
+            int dotIndex = videoName.lastIndexOf('.');
+            if (dotIndex > 0) {
+                extension = videoName.substring(dotIndex); // ".mp4"
+            }
+
+            String videoKey = "lectures/" + UUID.randomUUID() + extension;
+
             // 파일명에서 타입 추출
             String videoContentType = guessContentType(videoName);
 
@@ -444,7 +452,14 @@ public class LectureService {
         }
         // 영상 외 자료인 경우 (pdf, jpg, png 만 허용)
         if (fileName != null && !fileName.isBlank()) {
-            String fileKey = "lectures/" + UUID.randomUUID() + "_" + fileName;
+            String extension = "";
+
+            int dotIndex = fileName.lastIndexOf('.');
+            if (dotIndex > 0) {
+                extension = fileName.substring(dotIndex); // ".pdf"
+            }
+
+            String fileKey = "lectures/" + UUID.randomUUID() + extension;
             // 파일명에서 타입 추출
             String fileContentType = guessContentType(fileName);
 
@@ -481,7 +496,7 @@ public class LectureService {
 
     /**
      * S3 객체 URL 에서 객체 키(object key)를 추출하는 메서드
-     * <p>
+     *
      * 예: https://bucket.s3.amazonaws.com/lectures/abc.mp4?... → lectures/abc.mp4 추출
      *
      * @param url S3 Presigned upload URL

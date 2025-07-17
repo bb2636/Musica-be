@@ -29,6 +29,7 @@ public class LectureController {
         @RequestBody @Valid LectureCreateReqDto dto
     ) {
         LectureCreateResDto response = lectureService.createLecture(jwt, classId, dto);
+        System.out.println("🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉response🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉 = " + response);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
