@@ -3,6 +3,7 @@ package com.example.musica_be.service.review;
 import com.example.musica_be.domain.Review;
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.lecture.Lecture;
+import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.review.ReviewRequestDto;
 import com.example.musica_be.dto.review.ReviewResponseDto;
@@ -229,7 +230,8 @@ public class ReviewService {
 
                     // 1. GPT 요약 처리
                     try {
-                        summary = summarizeWithOpenAI(r.getComment());
+                        String comment = Optional.ofNullable(r.getComment()).orElse("");
+                        summary = summarizeWithOpenAI(comment);
                     } catch (Exception e) {
                         summary = "[요약 실패: OpenAI 호출 오류]";
                         e.printStackTrace();
@@ -245,7 +247,7 @@ public class ReviewService {
                         maskedUsername = "[익명 사용자: 유저 정보 없음]";
                         e.printStackTrace();
                     }
-
+                    // 3. DTO 변환 (null-safe → 내부에서 처리)
                     return ReviewSummaryCardDto.from(r, summary, maskedUsername);
                 })
                 .collect(Collectors.toList());
