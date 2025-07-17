@@ -1,19 +1,16 @@
-package com.example.musica_be.Seheduler;
+package com.example.musica_be.scheduler;
 
 import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.domain.settlement.Settlement;
-import com.example.musica_be.domain.settlement.SettlementStatus;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
 import com.example.musica_be.repository.settlement.SettlementRepository;
-import com.example.musica_be.repository.settlement.SettlementStatusRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

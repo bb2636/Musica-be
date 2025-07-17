@@ -1,9 +1,11 @@
 package com.example.musica_be.repository.review;
 
 import com.example.musica_be.domain.Review;
+import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.classes.ClassCardStatisticsDto;
 import com.example.musica_be.dto.classes.ClassesRatingAvgDto;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -91,4 +93,6 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     double averageRatingByInstructorId(@Param("instructorId") Long instructorId);
 
     List<Review> findTop3ByClasses_Instructor_IdOrderByCreatedAtDesc(Long instructorId);
+
+    Page<Review> findByClassesIn(List<Classes> classes, Pageable pageable);
 }

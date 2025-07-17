@@ -5,6 +5,8 @@ import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
+import com.example.musica_be.dto.instructor.InstructorReviewDto;
+import com.example.musica_be.dto.instructor.PagedResponse;
 import com.example.musica_be.dto.review.ReviewRequestDto;
 import com.example.musica_be.dto.review.ReviewResponseDto;
 import com.example.musica_be.dto.review.ReviewSummaryCardDto;
@@ -12,10 +14,14 @@ import com.example.musica_be.dto.review.UpdateReviewDto;
 import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
+import com.example.musica_be.repository.user.UserRepository;
+import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -35,6 +41,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ClassesRepository classRepository;
     private final LectureRepository lectureRepository;
+    private final UserRepository userRepository;
 
     @Qualifier("openAiWebClient")
     private final WebClient openAiWebClient; // 주입받음

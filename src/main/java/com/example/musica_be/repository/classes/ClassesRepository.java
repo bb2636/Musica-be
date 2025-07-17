@@ -2,6 +2,7 @@ package com.example.musica_be.repository.classes;
 
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
+import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.classes.ClassesStudentCountDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -83,4 +84,21 @@ public interface ClassesRepository extends JpaRepository<Classes, Long> {
             WHERE p.classes.instructor.id = :instructorId
         """)
     int countDistinctStudentsByInstructorId(@Param("instructorId") Long instructorId);
+
+    List<Classes> findByInstructor(User instructor);
+
+    @Query("""
+            SELECT c FROM Classes c
+            WHERE c.instructor.id = :instructorId
+              AND (:keyword IS NULL OR c.title LIKE %:keyword%)
+              AND (:categoryId IS NULL OR c.category.id = :categoryId)
+              AND (:difficultyId IS NULL OR c.difficulty.id = :difficultyId)
+        """)
+    Page<Classes> searchInstructorFiltered(
+        @Param("instructorId") Long instructorId,
+        @Param("keyword") String keyword,
+        @Param("categoryId") Long categoryId,
+        @Param("difficultyId") Long difficultyId,
+        Pageable pageable
+    );
 }

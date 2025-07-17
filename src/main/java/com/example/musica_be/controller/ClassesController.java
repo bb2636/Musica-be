@@ -5,6 +5,7 @@ import com.example.musica_be.dto.classes.ClassCreateReqDto;
 import com.example.musica_be.dto.classes.ClassSummaryDto;
 import com.example.musica_be.dto.classes.ClassUpdateReqDto;
 import com.example.musica_be.service.classes.ClassesService;
+import com.example.musica_be.util.JwtUtils;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -111,10 +112,29 @@ public class ClassesController {
     }
 
     // 3. 강사 전용
+//    @GetMapping("/instructors/classes")
+//    public ResponseEntity<List<ClassSummaryDto>> getClassListForInstructor(
+//        @RequestHeader("Authorization") String jwt
+//    ) {
+//        return ResponseEntity.ok(classesService.getClassListForInstructor(jwt));
+//    }
+
     @GetMapping("/instructors/classes")
-    public ResponseEntity<List<ClassSummaryDto>> getClassListForInstructor(
-        @RequestHeader("Authorization") String jwt
+    public ResponseEntity<Page<ClassSummaryDto>> getInstructorClasses(
+        @RequestHeader("Authorization") String jwt,
+        @RequestParam(required = false) String keyword,
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(required = false) Long difficultyId,
+        @RequestParam(defaultValue = "latest") String sort,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size
     ) {
-        return ResponseEntity.ok(classesService.getClassListForInstructor(jwt));
+        Long instructorId = JwtUtils.extractUserId(jwt); // ✅ 토큰에서 직접 ID 추출
+
+        Page<ClassSummaryDto> classes = classesService.getInstructorClasses(
+            instructorId, keyword, categoryId, difficultyId, sort, page, size
+        );
+
+        return ResponseEntity.ok(classes);
     }
 }

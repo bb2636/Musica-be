@@ -276,11 +276,11 @@ public class ClassesService {
     @Transactional(readOnly = true)
     public List<ClassCardDto> getRecommendedClasses(Long userId) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
+            .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 유저입니다."));
 
         Long levelId = Optional.ofNullable(user.getLevel())
-                .map(Level::getId)
-                .orElseThrow(() -> new IllegalStateException("회원 레벨 정보가 없습니다."));
+            .map(Level::getId)
+            .orElseThrow(() -> new IllegalStateException("회원 레벨 정보가 없습니다."));
 
         Pageable top20 = PageRequest.of(0, 20);
         List<Classes> recommended = classesRepository.findRecommendedByLevelId(levelId, top20);
@@ -288,16 +288,16 @@ public class ClassesService {
         if (recommended.size() < 20) {
             List<Long> excludeIds = recommended.stream().map(Classes::getId).toList();
             List<Classes> latest = classesRepository.findTop20ByOrderByCreatedAtDesc().stream()
-                    .filter(c -> !excludeIds.contains(c.getId()))
-                    .limit(20 - recommended.size())
-                    .toList();
+                .filter(c -> !excludeIds.contains(c.getId()))
+                .limit(20 - recommended.size())
+                .toList();
             recommended.addAll(latest);
         }
 
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(recommended);
         return recommended.stream()
-                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
-                .toList();
+            .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
+            .toList();
     }
 
 
@@ -309,19 +309,19 @@ public class ClassesService {
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(allClasses);
 
         List<ClassPopularityDto> scoredList = allClasses.stream()
-                .map(c -> {
-                    ClassCardStatisticsDto stats = statsMap.getOrDefault(c.getId(), new ClassCardStatisticsDto());
-                    int score = (int) (stats.getStudentCount() * 2 + stats.getWishlistCount());
-                    return new ClassPopularityDto(c, score);
-                })
-                .sorted(Comparator.comparingInt(ClassPopularityDto::getScore).reversed()
-                        .thenComparing(a -> a.getClasses().getCreatedAt(), Comparator.reverseOrder()))
-                .limit(20)
-                .toList();
+            .map(c -> {
+                ClassCardStatisticsDto stats = statsMap.getOrDefault(c.getId(), new ClassCardStatisticsDto());
+                int score = (int) (stats.getStudentCount() * 2 + stats.getWishlistCount());
+                return new ClassPopularityDto(c, score);
+            })
+            .sorted(Comparator.comparingInt(ClassPopularityDto::getScore).reversed()
+                .thenComparing(a -> a.getClasses().getCreatedAt(), Comparator.reverseOrder()))
+            .limit(20)
+            .toList();
 
         return scoredList.stream()
-                .map(dto -> ClassCardDto.from(dto.getClasses(), statsMap.get(dto.getClasses().getId())))
-                .toList();
+            .map(dto -> ClassCardDto.from(dto.getClasses(), statsMap.get(dto.getClasses().getId())))
+            .toList();
     }
 
     // 최신 클래스 (20개 limit)
@@ -331,8 +331,8 @@ public class ClassesService {
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(latestClasses);
 
         return latestClasses.stream()
-                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
-                .toList();
+            .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
+            .toList();
     }
 
     // ====== 헬퍼 메서드 ======
@@ -458,8 +458,8 @@ public class ClassesService {
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(freeClasses);
 
         return freeClasses.stream()
-                .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
-                .toList();
+            .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
+            .toList();
     }
 
     /**
@@ -574,6 +574,48 @@ public class ClassesService {
             return Collections.emptyMap(); // 빈 리스트일 경우 쿼리 생략
         }
         return getClassCardStats(classes); // 원래 쿼리 수행
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ClassSummaryDto> getInstructorClasses(
+        Long instructorId,
+        String keyword,
+        Long categoryId,
+        Long difficultyId,
+        String sort,
+        int page,
+        int size
+    ) {
+        // 1. 정렬 정보 구성
+        List<String> sortList = List.of(sort); // 문자열 하나라도 리스트로 구성
+        Sort springSort = getSort(sortList);
+        Pageable pageable = PageRequest.of(page, size, springSort);
+
+        // 2. 조건에 맞는 클래스 조회 (instructorId + keyword + 필터링)
+        Page<Classes> classPage = classesRepository.searchInstructorFiltered(
+            instructorId, keyword, categoryId, difficultyId, pageable
+        );
+
+        // 3. 해당 클래스들에 대한 통계 정보 수집
+        Map<Long, ClassStatisticsDto> statsMap = getClassStatisticsMap(classPage.getContent());
+
+        // 4. 기본 정렬된 DTO 리스트 변환
+        List<ClassSummaryDto> dtoList = classPage.getContent().stream()
+            .map(c -> ClassSummaryDto.from(c, statsMap.get(c.getId())))
+            .collect(Collectors.toList());
+
+        // 5. 수동 정렬 필요 시 적용
+        for (String sortKey : sortList) {
+            switch (sortKey) {
+                case "students" -> dtoList.sort(Comparator
+                    .comparingInt(ClassSummaryDto::getStudentCount).reversed());
+                case "rating" -> dtoList.sort(Comparator
+                    .comparingDouble(ClassSummaryDto::getAverageRating).reversed());
+            }
+        }
+
+        // 6. 최종 PageImpl 생성 후 반환
+        return new PageImpl<>(dtoList, pageable, classPage.getTotalElements());
     }
 
 }
