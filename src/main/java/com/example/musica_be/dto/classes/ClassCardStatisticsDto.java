@@ -39,4 +39,3 @@ public class ClassCardStatisticsDto {
                 && (ratingCount == null || ratingCount == 0L);
     }
 }
-

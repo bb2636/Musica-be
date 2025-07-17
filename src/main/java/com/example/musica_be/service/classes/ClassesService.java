@@ -294,7 +294,7 @@ public class ClassesService {
             recommended.addAll(latest);
         }
 
-        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(recommended);
+        Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(recommended);
         return recommended.stream()
                 .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
                 .toList();
@@ -306,7 +306,7 @@ public class ClassesService {
     public List<ClassCardDto> getPopularClasses() {
         List<Classes> allClasses = classesRepository.findAll();
 
-        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(allClasses);
+        Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(allClasses);
 
         List<ClassPopularityDto> scoredList = allClasses.stream()
                 .map(c -> {
@@ -328,7 +328,7 @@ public class ClassesService {
     @Transactional(readOnly = true)
     public List<ClassCardDto> getLatestClasses() {
         List<Classes> latestClasses = classesRepository.findTop20ByOrderByCreatedAtDesc();
-        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(latestClasses);
+        Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(latestClasses);
 
         return latestClasses.stream()
                 .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
@@ -455,7 +455,7 @@ public class ClassesService {
         // 가격이 0원인 클래스 중, 생성일 기준 내림차순으로 최대 5개 조회
         List<Classes> freeClasses = classesRepository.findTop5ByClassPriceOrderByCreatedAtDesc(0);
 
-        Map<Long, ClassCardStatisticsDto> statsMap = getClassCardStats(freeClasses);
+        Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(freeClasses);
 
         return freeClasses.stream()
                 .map(cls -> ClassCardDto.from(cls, statsMap.get(cls.getId())))
@@ -566,6 +566,14 @@ public class ClassesService {
         });
 
         return map;
+    }
+
+    // NPE 방지용 유틸 메서드
+    private Map<Long, ClassCardStatisticsDto> getSafeClassStats(List<Classes> classes) {
+        if (classes == null || classes.isEmpty()) {
+            return Collections.emptyMap(); // 빈 리스트일 경우 쿼리 생략
+        }
+        return getClassCardStats(classes); // 원래 쿼리 수행
     }
 
 }

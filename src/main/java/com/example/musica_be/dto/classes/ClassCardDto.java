@@ -1,5 +1,6 @@
 package com.example.musica_be.dto.classes;
 
+import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.domain.classes.Classes;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -47,7 +48,9 @@ public class ClassCardDto {
                 .rating(Optional.ofNullable(stats.getAverageRating()).orElse(0.0))
                 .ratingCount(Optional.ofNullable(stats.getRatingCount()).orElse(0L).intValue())
                 .studentCount(Optional.ofNullable(stats.getStudentCount()).orElse(0L).intValue())
-                .categoryName(cls.getCategory().getDisplayName())
+                .categoryName(Optional.ofNullable(cls.getCategory())
+                        .map(Category::getDisplayName)
+                        .orElse("미지정"))
                 .build();
     }
 }
