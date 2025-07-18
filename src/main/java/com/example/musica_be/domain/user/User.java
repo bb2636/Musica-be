@@ -31,7 +31,7 @@ public class User {
     @Column(nullable = false)
     private Role role;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "level_id", nullable = true)  // `role`이 USER일 경우만 필요
     private Level level;
 
