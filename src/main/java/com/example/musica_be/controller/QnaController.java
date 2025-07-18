@@ -59,7 +59,7 @@ public class QnaController {
     }
 
     // 답변 등록 (강사만)
-    @PostMapping("/instructors/answers")
+    @PutMapping("/instructors/answers")
     public ResponseEntity<CreateAnswerResDto> createAnswer(
         @RequestHeader("Authorization") String jwt,
         @RequestBody CreateAnswerReqDto request) throws Exception {
@@ -69,9 +69,10 @@ public class QnaController {
     }
 
     // 강사 마이페이지에서 자신의 답변 리스트 조회
-    @GetMapping("/instructors/{instructorId}/answers")
+    @GetMapping("/instructors/answers")
     public ResponseEntity<List<InstructorAnswerDto>> getInstructorAnswers(
-        @PathVariable Long instructorId) {
-        return ResponseEntity.ok(qnaService.getInstructorAnswers(instructorId));
+        @RequestHeader("Authorization") String jwt) {
+        Long userId = JwtUtils.extractUserId(jwt);
+        return ResponseEntity.ok(qnaService.getInstructorAnswers(userId));
     }
 }

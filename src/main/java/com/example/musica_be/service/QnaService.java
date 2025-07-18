@@ -19,6 +19,7 @@ import com.example.musica_be.repository.qna.AnswerRepository;
 import com.example.musica_be.repository.qna.QuestionRepository;
 import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.service.mapper.QnaMapper;
+import com.example.musica_be.util.JwtUtils;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -137,4 +138,13 @@ public class QnaService {
                 .map(qnaMapper::toInstructorAnswerDto)
                 .toList();
     }
+
+    //유저 마이페이지 질문 조회
+  public List<QuestionDto> getUserAnswers(String jwt){
+    Long userIdFromToken = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
+    return  questionRepository.findByUserId(userIdFromToken)
+        .stream()
+        .map(qnaMapper::toQuestionDto)
+        .toList();
+  }
 }
