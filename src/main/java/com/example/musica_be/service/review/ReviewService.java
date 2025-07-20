@@ -202,7 +202,7 @@ public class ReviewService {
                 .bodyValue(requestBody)
                 .exchangeToMono(response -> {
                     return response.bodyToMono(String.class)
-                            .doOnNext(raw -> System.out.println("📥 응답 본문: " + raw))
+//                            .doOnNext(raw -> System.out.println("📥 응답 본문: " + raw))
                             .map(body -> {
                                 try {
                                     // JSON 직접 파싱

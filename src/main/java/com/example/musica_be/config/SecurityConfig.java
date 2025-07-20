@@ -106,7 +106,8 @@ public class SecurityConfig {
                 .requestMatchers("/api/instructors/**").hasRole("INSTRUCTOR")
 
                 // 메인페이지 클래스 추천 허용(GET)
-                .requestMatchers("/api/classes/recommend").hasRole("USER")
+                .requestMatchers("/api/main/recommend").hasAnyRole("USER", "INSTRUCTOR", "ADMIN")
+//                .requestMatchers("/api/classes/recommend").hasRole("USER")
                 // 클래스 상세 조회 허용 (GET)
                 .requestMatchers(HttpMethod.GET, "/api/classes/**").permitAll()
                 // 클래스 검색 허용 (GET)

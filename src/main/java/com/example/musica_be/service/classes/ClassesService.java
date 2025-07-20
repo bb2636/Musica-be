@@ -304,14 +304,17 @@ public class ClassesService {
     // Popularity 점수 기반 인기 클래스 조회
     @Transactional(readOnly = true)
     public List<ClassCardDto> getPopularClasses() {
-        List<Classes> allClasses = classesRepository.findAll();
+        List<Classes> allClasses = classesRepository.findAll(); // 모든 클래스를 가져옴 (List)
 
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(allClasses);
 
         List<ClassPopularityDto> scoredList = allClasses.stream()
             .map(c -> {
                 ClassCardStatisticsDto stats = statsMap.getOrDefault(c.getId(), new ClassCardStatisticsDto());
-                int score = (int) (stats.getStudentCount() * 2 + stats.getWishlistCount());
+                int score = (int) (
+                    Optional.ofNullable(stats.getStudentCount()).orElse(0L) * 2 +
+                        Optional.ofNullable(stats.getWishlistCount()).orElse(0L)
+                );
                 return new ClassPopularityDto(c, score);
             })
             .sorted(Comparator.comparingInt(ClassPopularityDto::getScore).reversed()
@@ -327,7 +330,7 @@ public class ClassesService {
     // 최신 클래스 (20개 limit)
     @Transactional(readOnly = true)
     public List<ClassCardDto> getLatestClasses() {
-        List<Classes> latestClasses = classesRepository.findTop20ByOrderByCreatedAtDesc();
+        List<Classes> latestClasses = classesRepository.findTop20ByOrderByCreatedAtDesc(); // 최신순으로 20개의 클래스를 가져옴
         Map<Long, ClassCardStatisticsDto> statsMap = getSafeClassStats(latestClasses);
 
         return latestClasses.stream()
@@ -570,7 +573,7 @@ public class ClassesService {
 
     // NPE 방지용 유틸 메서드
     private Map<Long, ClassCardStatisticsDto> getSafeClassStats(List<Classes> classes) {
-        if (classes == null || classes.isEmpty()) {
+        if (classes == null || classes.isEmpty()) { // 클래스가 null 또는 비어있을 경우 비어있는 맵을 리턴
             return Collections.emptyMap(); // 빈 리스트일 경우 쿼리 생략
         }
         return getClassCardStats(classes); // 원래 쿼리 수행
