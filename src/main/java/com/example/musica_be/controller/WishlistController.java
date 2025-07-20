@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
 public class WishlistController {
 
     private final WishlistService wishlistService;
-    private final UserRepository userRepository;
 
     // 찜 추가
     @PostMapping("/classes/{classId}")
@@ -39,7 +38,7 @@ public class WishlistController {
         return ResponseEntity.ok(response);
     }
 
-    // 찜 목록 조회(유저 개인용 - 마이페이지)
+    // 찜 목록 조회 (마이페이지)
     @GetMapping("/mywishlist")
     public ResponseEntity<WishlistClassListResponseDto> getWishList(
             @RequestHeader("Authorization") String jwt) {
