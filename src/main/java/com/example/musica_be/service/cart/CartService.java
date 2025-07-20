@@ -113,6 +113,7 @@ public class CartService {
     cartItem.setCart(cart);
     cartItem.setClasses(classEntity);
     cartItem.setAmount(classEntity.getClassPrice());
+    cartItem.setQuantity(1);
     cartItem.setAdded_at(LocalDateTime.now());
     cartItemRepository.save(cartItem);
 
