@@ -13,9 +13,7 @@ import com.example.musica_be.repository.cart.CartItemRepository;
 import com.example.musica_be.repository.cart.CartRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
-import com.example.musica_be.repository.payment.PaymentRepository;
 import com.example.musica_be.repository.user.UserRepository;
-import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,31 +25,43 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CartService {
+
   private final CartRepository cartRepository;
   private final CartItemRepository cartItemRepository;
   private final UserRepository userRepository;
   private final ClassesRepository classesRepository;
   private final PaymentItemRepository paymentItemRepository;
 
-  @Transactional
-  // 유저의 카트 정보
-  public CartDto getCartItemList(String jwt) {
-    Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
+  /**
+   * 장바구니가 없으면 새로 생성해서 반환하는 공통 메서드
+   */
+  private Cart getOrCreateCart(Long userId) {
     Cart cart = cartRepository.findByUserId(userId);
 
-    //카트가 없을 경우 유저의 카트 추가
+    // 장바구니가 없으면 새로 생성
     if (cart == null) {
       User user = userRepository.findById(userId)
-          .orElseThrow(() -> new RuntimeException("User not found"));
+              .orElseThrow(() -> new RuntimeException("User not found"));
       cart = new Cart();
       cart.setUser(user);
       cart.setCreated_at(LocalDateTime.now());
       cartRepository.save(cart);
     }
 
-    //CartDto 생성
+    return cart;
+  }
+
+  /**
+   * 현재 로그인한 사용자의 장바구니 정보를 조회하고 없으면 생성함
+   * 장바구니 아이템 목록, 총 가격, 총 개수 등을 반환
+   */
+  @Transactional
+  public CartDto getCartItemList(Long userId) {
+    Cart cart = getOrCreateCart(userId);
+
+    // 장바구니 아이템 가져오기
     List<CartItem> cartItems = cartItemRepository.findAllByCartIdWithClasses(cart.getId());
-    List<CartItemDto> cartItemDtoList = new ArrayList<CartItemDto>();
+    List<CartItemDto> cartItemDtoList = new ArrayList<>();
     int totalPrice = 0;
 
     for (CartItem cartItem : cartItems) {
@@ -63,48 +73,41 @@ public class CartService {
     }
 
     return CartDto.builder()
-        .CartId(cart.getId())
-        .userId(userId)
-        .totalPrice(totalPrice)
-        .totalCount(cartItems.size())
-        .cartItems(cartItemDtoList)
-        .build();
+            .CartId(cart.getId())
+            .userId(userId)
+            .totalPrice(totalPrice)
+            .totalCount(cartItems.size())
+            .cartItems(cartItemDtoList)
+            .build();
   }
 
-  // 카트 추가
+  /**
+   * 장바구니에 강의(classId)를 추가
+   * 이미 결제된 강의나 이미 담긴 강의는 예외 발생
+   */
   @Transactional
-  public CartResponseDto cartItemAdd(Long classId, String jwt) {
-    Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
-    Cart cart = cartRepository.findByUserId(userId);
+  public CartResponseDto cartItemAdd(Long userId, Long classId) {
+    Cart cart = getOrCreateCart(userId);
 
-    // 카트가 없을 경우 유저의 카트 추가
-    if (cart == null) {
-      User user = userRepository.findById(userId)
-          .orElseThrow(() -> new RuntimeException("User not found"));
-      cart = new Cart();
-      cart.setUser(user);
-      cart.setCreated_at(LocalDateTime.now());
-      cartRepository.save(cart);
-    }
-
-    // 해당 클래스가 이미 결제된 경우 → 장바구니 담기 불가
+    // 이미 결제한 강의는 담을 수 없음
     List<PaymentItem> paidItems = paymentItemRepository.findByUserId(userId);
     boolean alreadyPurchased = paidItems.stream()
-        .filter(item -> !"CANCELED".equalsIgnoreCase(item.getPayment().getStatus().getName()))
-        .anyMatch(item -> item.getClasses().getId().equals(classId));
+            .filter(item -> !"CANCELED".equalsIgnoreCase(item.getPayment().getStatus().getName()))
+            .anyMatch(item -> item.getClasses().getId().equals(classId));
 
     if (alreadyPurchased) {
       throw new IllegalStateException("이미 결제한 강의는 장바구니에 담을 수 없습니다.");
     }
 
-    // 클래스가 이미 장바구니에 담겼는지 체크
+    // 이미 장바구니에 담긴 강의인지 체크
     boolean exists = cartItemRepository.existsByCartIdAndClassesId(cart.getId(), classId);
     if (exists) {
       throw new IllegalStateException("이미 장바구니에 담긴 강의입니다.");
     }
 
+    // 장바구니에 강의 추가
     Classes classEntity = classesRepository.findById(classId)
-        .orElseThrow(() -> new RuntimeException("클래스를 찾을 수 없습니다."));
+            .orElseThrow(() -> new RuntimeException("클래스를 찾을 수 없습니다."));
 
     CartItem cartItem = new CartItem();
     cartItem.setCart(cart);
@@ -114,64 +117,68 @@ public class CartService {
     cartItemRepository.save(cartItem);
 
     return CartResponseDto.builder()
-        .message("장바구니에 강의가 추가되었습니다.")
-        .status("success")
-        .build();
+            .message("장바구니에 강의가 추가되었습니다.")
+            .status("success")
+            .build();
   }
 
+  /**
+   * 장바구니에서 선택한 강의 아이템들을 제거
+   * 실패 시 에러 메시지 반환
+   */
   @Transactional
-  public CartResponseDto cartItemRemove(String jwt, CartItemIdsDto cartItemIdsDto) {
+  public CartResponseDto cartItemRemove(Long userId, CartItemIdsDto cartItemIdsDto) {
     List<Long> ids = cartItemIdsDto.getCartItemIds();
     if (ids == null || ids.isEmpty()) {
       return CartResponseDto.builder()
-          .message("삭제할 클래스가 없습니다.")
-          .status("failed")
-          .build();
+              .message("삭제할 클래스가 없습니다.")
+              .status("failed")
+              .build();
     }
 
     try {
       cartItemRepository.deleteAllByIdInBatch(ids);
-
       return CartResponseDto.builder()
-          .message("선택한 클래스들이 삭제되었습니다.")
-          .status("success")
-          .items(cartItemIdsDto)
-          .build();
-
+              .message("선택한 클래스들이 삭제되었습니다.")
+              .status("success")
+              .items(cartItemIdsDto)
+              .build();
     } catch (Exception e) {
       return CartResponseDto.builder()
-          .message("선택한 클래스 삭제에 실패했습니다.")
-          .status("failed")
-          .items(cartItemIdsDto)
-          .build();
+              .message("선택한 클래스 삭제에 실패했습니다.")
+              .status("failed")
+              .items(cartItemIdsDto)
+              .build();
     }
   }
- // 모든 카트 아이템 삭제
+
+  /**
+   * 장바구니 전체 비우기
+   * 장바구니가 없거나 삭제 중 에러가 발생하면 실패 메시지 반환
+   */
   @Transactional
-  public CartResponseDto cartItemAllRemove(String jwt) {
+  public CartResponseDto cartItemAllRemove(Long userId) {
     try {
-      Long userId = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
       Cart cart = cartRepository.findByUserId(userId);
 
       if (cart == null) {
         return CartResponseDto.builder()
-            .message("장바구니가 존재하지 않습니다.")
-            .status("failed")
-            .build();
+                .message("장바구니가 존재하지 않습니다.")
+                .status("failed")
+                .build();
       }
 
       cartItemRepository.deleteByCartId(cart.getId());
 
       return CartResponseDto.builder()
-          .message("장바구니가 비워졌습니다.")
-          .status("success")
-          .build();
-
+              .message("장바구니가 비워졌습니다.")
+              .status("success")
+              .build();
     } catch (Exception e) {
       return CartResponseDto.builder()
-          .message("장바구니 비우기에 실패했습니다.")
-          .status("failed")
-          .build();
+              .message("장바구니 비우기에 실패했습니다.")
+              .status("failed")
+              .build();
     }
   }
 }
