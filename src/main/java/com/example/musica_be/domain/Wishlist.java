@@ -12,6 +12,10 @@ import java.time.LocalDateTime;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
+@Table(
+        name = "wishlist",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "class_id"})
+)
 public class Wishlist {
 
     @Id
