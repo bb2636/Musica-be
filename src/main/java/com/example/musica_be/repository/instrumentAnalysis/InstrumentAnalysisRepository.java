@@ -2,6 +2,7 @@ package com.example.musica_be.repository.instrumentAnalysis;
 
 import com.example.musica_be.domain.instrumentAnalysis.AnalysisStatus;
 import com.example.musica_be.domain.instrumentAnalysis.InstrumentAnalysis;
+import com.example.musica_be.domain.lecture.Lecture;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,4 +15,6 @@ public interface InstrumentAnalysisRepository extends JpaRepository<InstrumentAn
     boolean existsByLectureId(Long lectureId);
     List<InstrumentAnalysis> findByStatus(AnalysisStatus status);
     void deleteByLectureId(Long id);
+
+    Optional<InstrumentAnalysis> findByLecture(Lecture lecture);
 }

@@ -26,42 +26,32 @@ public class UploadService {
 
     @Transactional
     public PresignedUrlResponseDto getPresignedUrl(PresignedUrlRequestDto request) {
-        String originalFileName = request.getFileName(); // 예: "데이터베이스 시스템.pdf"
+        String originalFileName = request.getFileName();
         String extension = "";
 
         int dotIndex = originalFileName.lastIndexOf('.');
         if (dotIndex > 0) {
-            extension = originalFileName.substring(dotIndex); // ".pdf" 또는 ".mp4"
+            extension = originalFileName.substring(dotIndex);
         }
 
-        // 확장자에 따라 저장 디렉토리 결정
         String directory = extension.equalsIgnoreCase(".mp4") ? "lectures/" : "thumbnails/";
         String key = directory + UUID.randomUUID() + extension;
 
-        // 업로드용 URL (PUT presigned URL)
         String uploadUrl = S3PresignedUrl.generateUploadUrl(
-            s3Presigner,
-            bucket,
-            key,
-            request.getContentType(),
-            Duration.ofMinutes(5)
+            s3Presigner, bucket, key, request.getContentType(), Duration.ofMinutes(5)
         );
 
-        // 미리보기용 Presigned URL (GET 방식, 제한시간 존재)
         String viewUrl = S3PresignedUrl.generateDownloadUrl(
-            s3Presigner,
-            bucket,
-            key,
-            Duration.ofMinutes(5)
+            s3Presigner, bucket, key, Duration.ofMinutes(5)
         );
 
-        // ✅ public 접근 가능한 full static URL (제한시간 없음)
         String fileUrl = s3UrlPrefix + "/" + key;
 
         return PresignedUrlResponseDto.builder()
-            .uploadUrl(uploadUrl)   // PUT 방식 presigned url
-            .fileUrl(fileUrl)       // 🔥 full static public url
-            .viewUrl(viewUrl)       // GET presigned (optional)
+            .uploadUrl(uploadUrl)
+            .fileUrl(fileUrl)
+            .viewUrl(viewUrl)
+            .objectKey(key) // 🔥 여기에 포함
             .build();
     }
 

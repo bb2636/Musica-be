@@ -22,6 +22,12 @@ public class LectureSummaryDto {
     // 선택: 시청 완료 여부
     private Boolean isCompleted;
 
+    // ✅ 영상 및 파일 URL/ObjectKey 추가
+    private String videoUrl;
+    private String fileUrl;
+    private String videoObjectKey;
+    private String fileObjectKey;
+
     /**
      * 공개용 또는 강사용 (진행률 없음)
      */
@@ -30,9 +36,13 @@ public class LectureSummaryDto {
             lecture.getId(),
             lecture.getTitle(),
             lecture.getLectureOrder(),
-            null,        // progressRate
-            lecture.getDuration(),     // duration 포함
-            null                       // isCompleted 없음
+            null,
+            lecture.getDuration(),
+            null,
+            lecture.getVideoUrl(),
+            lecture.getFileUrl(),
+            lecture.getVideoObjectKey(),
+            lecture.getFileObjectKey()
         );
     }
 
@@ -55,7 +65,11 @@ public class LectureSummaryDto {
             lecture.getLectureOrder(),
             rate,
             lecture.getDuration(),
-            completed
+            completed,
+            lecture.getVideoUrl(),
+            lecture.getFileUrl(),
+            lecture.getVideoObjectKey(),
+            lecture.getFileObjectKey()
         );
     }
 }

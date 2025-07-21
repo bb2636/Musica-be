@@ -4,14 +4,9 @@ package com.example.musica_be.controller;
 import com.example.musica_be.dto.upload.PresignedUrlRequestDto;
 import com.example.musica_be.dto.upload.PresignedUrlResponseDto;
 import com.example.musica_be.service.UploadService;
-import com.example.musica_be.util.S3PresignedUrl;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-
-import java.time.Duration;
 
 @RestController
 @RequestMapping("/api/uploads")

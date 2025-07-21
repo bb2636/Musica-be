@@ -281,7 +281,10 @@ public class InstrumentAnalysisService {
 
         String resultJson = Optional.ofNullable(jobResult.getResult())
             .map(JobStatusResponseDto.ResultWrapper::getResultJson)
-            .orElseThrow(() -> new IllegalStateException("🎯 resultJson이 비어 있습니다."));
+            .orElseThrow(() -> {
+                log.error("❌ resultJson 없음 - jobId: {}, jobResult: {}", jobId, jobResult);
+                return new IllegalStateException("🎯 resultJson이 비어 있습니다.");
+            });
 
         try {
             JobStatusResponseDto.Detection detection =

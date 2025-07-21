@@ -1,5 +1,6 @@
 package com.example.musica_be.domain.classes;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -30,6 +31,7 @@ public class Category {
     private int displayOrder;
 
     // 노출 여부 (관리자가 숨기거나 할 때 사용)
+    @JsonProperty("isActive")
     @Column(nullable = false)
     private boolean isActive;
 }

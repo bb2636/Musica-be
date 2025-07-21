@@ -55,12 +55,12 @@ public class LectureService {
 
     /**
      * [강의 등록 + 악기 분석 + 추천 카테고리 반환]
-     *
+     * <p>
      * 강사가 클래스에 강의를 등록할 때 사용하는 메서드입니다.
      * 영상 또는 자료 중 하나 이상이 필수이며,
      * 등록 후 자동으로 Music.AI API에 분석 요청을 보내고,
      * 분석 결과를 기반으로 추천 가능한 카테고리 목록을 함께 반환합니다.
-     *
+     * <p>
      * 전체 흐름:
      * 1. 강의 등록 요청에 대한 유효성 및 권한 검사
      * 2. Lecture 엔티티 생성 및 저장
@@ -75,21 +75,23 @@ public class LectureService {
      */
     @Transactional
     public LectureCreateResDto createLecture(String jwt, Long classId, LectureCreateReqDto dto) {
-        // 1. 유효성 검사
+        // 1. 유효성 체크
         if ((dto.getVideoUrl() == null || dto.getVideoUrl().isBlank()) &&
             (dto.getFileUrl() == null || dto.getFileUrl().isBlank())) {
-            throw new IllegalArgumentException("강의 영상(videoUrl) 또는 강의 자료(fileUrl) 중 하나는 반드시 포함되어야 합니다.");
+            throw new IllegalArgumentException("강의 영상 또는 자료는 하나 이상 필요합니다.");
         }
 
-        // 2. 사용자 권한 검사
+        // 🔍 2. S3 객체 키 추출
+        String videoObjectKey = dto.getVideoObjectKey();
+        String fileObjectKey = dto.getFileObjectKey();
+//        String videoObjectKey = extractVideoObjectKey(dto.getVideoUrl());
+//        String fileObjectKey = extractVideoObjectKey(dto.getFileUrl());
+
+        // 3. 사용자 권한 검사
         Long userId = JwtUtils.extractUserId(jwt);
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스가 존재하지 않습니다."));
         validateInstructor(classes, userId);
-
-        // 3. S3 ObjectKey 추출
-        String videoObjectKey = extractVideoObjectKey(dto.getVideoUrl());
-        String fileObjectKey = extractVideoObjectKey(dto.getFileUrl());
 
         // 4. 강의 엔티티 저장
         Lecture lecture = Lecture.builder()
@@ -104,31 +106,35 @@ public class LectureService {
             .build();
         lectureRepository.save(lecture);
 
-        // 기본값: 빈 리스트 (추천 카테고리 없음)
+        // 5. 추천 카테고리 분석
         List<String> recommendedCategories = List.of();
 
-        // 5. videoUrl 이 있는 경우만 Music.AI 분석 요청
-        if (dto.getVideoUrl() != null && !dto.getVideoUrl().isBlank()) {
-            String s3DownloadUrl = generatePresignedDownloadUrl(videoObjectKey);
-            InstrumentAnalysisRequestDto analysisRequestDto = new InstrumentAnalysisRequestDto(lecture.getId(), s3DownloadUrl);
+        if (videoObjectKey != null && videoObjectKey.endsWith(".mp4")) {
+            try {
+                String s3DownloadUrl = generatePresignedDownloadUrl(videoObjectKey);
+                log.info("🎯 MusicAI 요청 URL: {}", s3DownloadUrl);
 
-            // [1] 분석 Job 생성
-            JobCreateResponseDto response = instrumentAnalysisService.requestAnalysis(analysisRequestDto);
-            String jobId = response.getId();
+                InstrumentAnalysisRequestDto analysisRequestDto =
+                    new InstrumentAnalysisRequestDto(lecture.getId(), s3DownloadUrl);
 
-            // [2] InstrumentAnalysis 직접 조회
-            InstrumentAnalysis analysis = instrumentAnalysisRepository.findByJobId(jobId)
-                .orElseThrow(() -> new IllegalStateException("jobId로 분석 정보를 찾을 수 없습니다."));
+                JobCreateResponseDto response = instrumentAnalysisService.requestAnalysis(analysisRequestDto);
+                String jobId = response.getId();
 
-            // [3] 분석 완료까지 대기 + 결과 파싱
-            AnalysisResultDto resultDto = instrumentAnalysisService.waitAndParse(analysis);
+                InstrumentAnalysis analysis = instrumentAnalysisRepository.findByJobId(jobId)
+                    .orElseThrow(() -> new IllegalStateException("jobId로 분석 정보를 찾을 수 없습니다."));
 
-            // [4] 감지된 악기로부터 추천 카테고리 추출
-            List<String> detectedInstruments = resultDto.getDetectedInstruments();
-            recommendedCategories = InstrumentCategoryMapper.toCategories(detectedInstruments);
+                AnalysisResultDto resultDto = instrumentAnalysisService.waitAndParse(analysis);
+                List<String> detectedInstruments = resultDto.getDetectedInstruments();
+                recommendedCategories = InstrumentCategoryMapper.toCategories(detectedInstruments);
+            } catch (Exception e) {
+                log.error("🎯 MusicAI 분석 실패: {}", e.getMessage(), e);
+                // 실패하더라도 서비스는 계속 진행
+            }
+        } else if (dto.getVideoUrl() != null) {
+            log.warn("⚠️ videoUrl이 존재하지만 videoObjectKey가 없거나 mp4가 아님 → MusicAI 분석 생략: {}", dto.getVideoUrl());
         }
 
-        // 6. 결과 반환
+        // 6. 응답 반환
         return LectureCreateResDto.builder()
             .lectureId(lecture.getId())
             .recommendedCategories(recommendedCategories)
@@ -187,12 +193,17 @@ public class LectureService {
     public void deleteLecture(String jwt, Long lectureId) {
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 존재하는 강의인지 확인
+        // 1. 강의 존재 여부 확인
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-        // 유저 권한 확인
+
+        // 2. 권한 확인
         validateInstructor(lecture.getClasses(), userId);
 
+        // ✅ 3. 연관된 악기 분석 데이터 먼저 삭제
+        instrumentAnalysisRepository.deleteByLectureId(lectureId);
+
+        // 4. 강의 삭제
         lectureRepository.delete(lecture);
     }
 
@@ -213,23 +224,27 @@ public class LectureService {
             fileUrl = generatePresignedDownloadUrl(lecture.getFileObjectKey());
         }
 
-        // 3. jwt가 없거나 빈 문자열이면 비로그인 사용자 처리 → 시청 기록 없음
+        // ✅ 3. 분석 결과 조회
+        InstrumentAnalysis analysis = instrumentAnalysisRepository.findByLecture(lecture)
+            .orElse(null);
+
+        // 4. jwt가 없거나 빈 문자열이면 비로그인 사용자 처리 → 시청 기록 없음
         if (jwt == null || jwt.isBlank()) {
-            return LectureDetailResDto.from(lecture, null, videoUrl, fileUrl);
+            return LectureDetailResDto.from(lecture, null, videoUrl, fileUrl, analysis);
         }
 
-        // 4. 사용자 조회
+        // 5. 사용자 조회
         Long userId = JwtUtils.extractUserId(jwt);
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
 
-        // 5. 시청 진행률 조회
+        // 6. 시청 진행률 조회
         LectureProgress progress = lectureProgressRepository
             .findByUserAndLecture(user, lecture)
             .orElse(null);
 
-        // 6. DTO로 변환
-        return LectureDetailResDto.from(lecture, progress, videoUrl, fileUrl);
+        // 7. DTO로 변환
+        return LectureDetailResDto.from(lecture, progress, videoUrl, fileUrl, analysis);
     }
 
     // 특정 사용자의 특정 강의에 대한 시청 시간을 저장하거나 갱신하는 로직
@@ -401,6 +416,7 @@ public class LectureService {
 
     // S3 Presigned URL 생성 (통합 메서드)
     // 강사가 강의 추가 페이지에서 등록 버튼을 클릭했을 때 실행되는 로직
+
     /**
      * 강의 등록 시 사용하는 통합 Presigned URL 생성 메서드
      * <p>
@@ -496,7 +512,7 @@ public class LectureService {
 
     /**
      * S3 객체 URL 에서 객체 키(object key)를 추출하는 메서드
-     *
+     * <p>
      * 예: https://bucket.s3.amazonaws.com/lectures/abc.mp4?... → lectures/abc.mp4 추출
      *
      * @param url S3 Presigned upload URL
@@ -505,11 +521,23 @@ public class LectureService {
      */
     private String extractVideoObjectKey(String url) {
         if (url == null || url.isBlank()) {
-            return null; // 또는 예외 발생: URL 미제공
+            return null;
         }
+
         try {
             URI uri = new URI(url);
-            return uri.getPath().substring(1); // "/lectures/abc.mp4" → "lectures/abc.mp4"
+            String path = uri.getPath(); // "/lectures/abc.mp4" 형태
+
+            // 디버깅 로그
+            log.info("🎯 [extractVideoObjectKey] 원본 URL: {}", url);
+            log.info("🎯 [extractVideoObjectKey] URI path: {}", path);
+
+            // 슬래시 방어 처리
+            String objectKey = path.startsWith("/") ? path.substring(1) : path;
+
+            log.info("🎯 [extractVideoObjectKey] 최종 objectKey: {}", objectKey);
+
+            return objectKey;
         } catch (Exception e) {
             throw new IllegalArgumentException("잘못된 URL 형식입니다: " + url);
         }
@@ -517,7 +545,7 @@ public class LectureService {
 
     /**
      * 강의 영상 또는 파일의 S3 Presigned 다운로드 URL을 생성하는 메서드
-     *
+     * <p>
      * 프론트는 이 URL을 통해 실제 파일을 재생하거나 다운로드할 수 있음
      *
      * @param key S3에 저장된 객체 키 (예: lectures/abc.mp4)
@@ -529,17 +557,22 @@ public class LectureService {
             throw new IllegalArgumentException("S3 객체 키(key)는 null이거나 비어 있을 수 없습니다.");
         }
 
+        // ✅ key가 "/lectures/abc.mp4"처럼 슬래시로 시작하면 제거
+        if (key.startsWith("/")) {
+            key = key.substring(1);
+        }
+
         return S3PresignedUrl.generateDownloadUrl(
-            presigner,       // AWS S3 요청 서명 도구
-            bucket,          // 버킷 이름
-            key,             // 객체 키
-            Duration.ofMinutes(60)  // 1시간 동안 유효한 링크
+            presigner,
+            bucket,
+            key,
+            Duration.ofMinutes(60)
         );
     }
 
     /**
      * 파일 확장자에 따라 Content-Type을 유추하는 메서드
-     *
+     * <p>
      * Presigned URL 생성 시 올바른 Content-Type을 설정하기 위함
      *
      * @param filename 파일명 (확장자 포함)

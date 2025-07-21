@@ -6,21 +6,32 @@ import lombok.Getter;
 
 @Getter
 public class LectureCreateReqDto {
+
     @NotBlank(message = "강의 제목은 필수입니다.")
-    private String title; // 강의 제목
+    private String title;
 
     /**
-     * S3에 업로드된 영상 객체 URL (옵션)
+     * 강의 영상 정적 URL (프론트에 표시용)
      */
     private String videoUrl;
 
     /**
-     * S3에 업로드된 강의자료 객체 URL (옵션)
+     * 강의 자료 정적 URL (프론트에 표시용)
      */
     private String fileUrl;
+
+    /**
+     * 강의 영상의 S3 ObjectKey (분석용)
+     */
+    private String videoObjectKey;
+
+    /**
+     * 강의 자료의 S3 ObjectKey (분석 X)
+     */
+    private String fileObjectKey;
 
     @NotNull(message = "강의 순서는 필수입니다.")
     private Integer lectureOrder;
 
-    private Integer duration; // 강의 길이
+    private Integer duration; // 초 단위
 }

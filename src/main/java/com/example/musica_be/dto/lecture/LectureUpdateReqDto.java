@@ -20,7 +20,7 @@ public class LectureUpdateReqDto {
      */
     private String fileUrl;
 
-    @NotNull(message = "강의 순서는 필수입니다.")
+//    @NotNull(message = "강의 순서는 필수입니다.")
     private Integer lectureOrder;
 
     private Integer duration; // 강의 길이
