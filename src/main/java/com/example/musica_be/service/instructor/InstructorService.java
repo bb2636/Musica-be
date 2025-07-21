@@ -22,6 +22,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +40,9 @@ public class InstructorService {
     // 강사 마이페이지 대시보드에 보일 내용들
     @Transactional
     public InstructorDashboardResDto getInstructorDashboard(Long instructorId) {
+        LocalDate now = LocalDate.now();
+        int year = now.getYear();
+        int month = now.getMonthValue();
 
         // 1. 강사 정보
         User instructor = userRepository.findById(instructorId)
@@ -49,7 +53,7 @@ public class InstructorService {
 
         // 2. 통계 정보
         int totalRevenue = paymentItemRepository.sumTotalRevenueByInstructorId(instructorId);
-        int monthlyRevenue = paymentItemRepository.sumMonthlyRevenueByInstructorId(instructorId);
+        int monthlyRevenue = paymentItemRepository.sumMonthlyRevenueByInstructorId(instructorId, year, month);
         int pendingQuestions = questionRepository.countPendingByInstructorId(instructorId);
         int totalReviews = reviewRepository.countByInstructorId(instructorId);
         double averageRating = reviewRepository.averageRatingByInstructorId(instructorId);

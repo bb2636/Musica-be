@@ -15,11 +15,12 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     List<Question> findByUserId(Long userId);
 
+    // 강사 미답변 질문 수
     @Query("""
-        SELECT COUNT(q)
-        FROM Question q
-        WHERE q.lecture.classes.instructor.id = :instructorId
-        AND q.status = 'IN_PROGRESS'
+            SELECT COUNT(q)
+            FROM Question q
+            WHERE q.lecture.classes.instructor.id = :instructorId
+              AND q.status = com.example.musica_be.domain.question.QuestionStatus.IN_PROGRESS
         """)
     int countPendingByInstructorId(@Param("instructorId") Long instructorId);
 

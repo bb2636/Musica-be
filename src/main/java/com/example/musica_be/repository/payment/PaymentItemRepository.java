@@ -38,30 +38,42 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
 
     boolean existsByPayment_User_IdAndClasses_Id(Long userId, Long classesId);
 
+    // 강사 총 수입
     @Query("""
-        SELECT COALESCE(SUM(p.amount), 0)
-        FROM PaymentItem p
-        WHERE p.classes.instructor.id = :instructorId
+            SELECT COALESCE(SUM(p.amount), 0)
+            FROM PaymentItem p
+            JOIN p.payment pay
+            JOIN pay.status s
+            WHERE p.classes.instructor.id = :instructorId
+              AND s.name = 'PAID'
         """)
     int sumTotalRevenueByInstructorId(@Param("instructorId") Long instructorId);
 
+    // 강사 월 수입
     @Query("""
-        SELECT COALESCE(SUM(p.amount), 0)
-        FROM PaymentItem p
-        WHERE p.classes.instructor.id = :instructorId
-        AND MONTH(p.payment.paidAt) = MONTH(CURRENT_DATE)
-        AND YEAR(p.payment.paidAt) = YEAR(CURRENT_DATE)
+            SELECT COALESCE(SUM(p.amount), 0)
+            FROM PaymentItem p
+            JOIN p.payment pay
+            JOIN pay.status s
+            WHERE p.classes.instructor.id = :instructorId
+              AND s.name = 'PAID'
+              AND FUNCTION('YEAR', pay.paidAt) = :year
+              AND FUNCTION('MONTH', pay.paidAt) = :month
         """)
-    int sumMonthlyRevenueByInstructorId(@Param("instructorId") Long instructorId);
+    int sumMonthlyRevenueByInstructorId(
+        @Param("instructorId") Long instructorId,
+        @Param("year") int year,
+        @Param("month") int month
+    );
 
     // ClassCardStatisticsDto용
     @Query("""
-    SELECT new com.example.musica_be.dto.classes.ClassCardStatisticsDto(p.classes.id, COUNT(p), 0L, 0.0, 0L)
-    FROM PaymentItem p
-    WHERE p.classes.id IN :classIds
-    AND p.payment.status.name <> 'CANCELED'
-    GROUP BY p.classes.id
-    """)
+        SELECT new com.example.musica_be.dto.classes.ClassCardStatisticsDto(p.classes.id, COUNT(p), 0L, 0.0, 0L)
+        FROM PaymentItem p
+        WHERE p.classes.id IN :classIds
+        AND p.payment.status.name <> 'CANCELED'
+        GROUP BY p.classes.id
+        """)
     List<ClassCardStatisticsDto> getStudentStatsForCard(@Param("classIds") List<Long> classIds);
 
 }

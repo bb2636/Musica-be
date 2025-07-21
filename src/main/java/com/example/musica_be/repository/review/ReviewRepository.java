@@ -61,13 +61,13 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
 
     // ReviewRepository 통계 쿼리
     @Query("""
-    SELECT new com.example.musica_be.dto.classes.ClassCardStatisticsDto(
-        r.classes.id, 0L, 0L, AVG(r.rating), COUNT(r)
-    )
-    FROM Review r
-    WHERE r.classes.id IN :classIds
-    GROUP BY r.classes.id
-    """)
+        SELECT new com.example.musica_be.dto.classes.ClassCardStatisticsDto(
+            r.classes.id, 0L, 0L, AVG(r.rating), COUNT(r)
+        )
+        FROM Review r
+        WHERE r.classes.id IN :classIds
+        GROUP BY r.classes.id
+        """)
     List<ClassCardStatisticsDto> getAvgRatings(@Param("classIds") List<Long> classIds);
 
     @Query("""
@@ -85,8 +85,9 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
         """)
     int countByInstructorId(@Param("instructorId") Long instructorId);
 
+    // 강사 클래스 리뷰 점수 평균
     @Query("""
-            SELECT COALESCE(AVG(r.rating), 0.0)
+            SELECT COALESCE(AVG(r.rating), 0)
             FROM Review r
             WHERE r.classes.instructor.id = :instructorId
         """)
