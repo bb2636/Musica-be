@@ -75,4 +75,15 @@ public class QnaController {
         Long userId = JwtUtils.extractUserId(jwt);
         return ResponseEntity.ok(qnaService.getInstructorAnswers(userId));
     }
+
+    // 강사의 질문 리스트 조회
+    @GetMapping("/instructors/questions")
+    public ResponseEntity<List<QuestionDto>> getQuestionsForInstructor(
+            @RequestHeader("Authorization") String jwt,
+            @RequestParam(required = false) String status // PENDING or ANSWERED
+    ) {
+        Long instructorId = JwtUtils.extractUserId(jwt);
+        return ResponseEntity.ok(qnaService.getQuestionsForInstructor(instructorId, status));
+    }
+
 }

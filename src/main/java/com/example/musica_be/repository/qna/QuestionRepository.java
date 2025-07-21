@@ -1,6 +1,7 @@
 package com.example.musica_be.repository.qna;
 
 import com.example.musica_be.domain.question.Question;
+import com.example.musica_be.domain.question.QuestionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -23,4 +24,6 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     int countPendingByInstructorId(@Param("instructorId") Long instructorId);
 
     List<Question> findTop3ByLecture_Classes_Instructor_IdOrderByCreatedAtDesc(Long instructorId);
+
+    List<Question> findByLectureIdAndStatus(Long lectureId, QuestionStatus status);
 }

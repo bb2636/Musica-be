@@ -140,11 +140,47 @@ public class QnaService {
     }
 
     //유저 마이페이지 질문 조회
-  public List<QuestionDto> getUserAnswers(String jwt){
+    public List<QuestionDto> getUserAnswers(String jwt){
     Long userIdFromToken = Long.valueOf(JwtUtils.getUserIdFromToken(jwt));
     return  questionRepository.findByUserId(userIdFromToken)
         .stream()
         .map(qnaMapper::toQuestionDto)
         .toList();
-  }
+    }
+
+    /**
+     * ✅ 강사 마이페이지 - 질의응답 관리 탭에서 사용하는 메서드
+     *
+     * 해당 강사가 등록한 클래스들의 강의에 달린 질문들을 모두 조회합니다.
+     *
+     * - 클래스 → 강의 → 질문 순으로 탐색
+     * - status 필터(PENDING, ANSWERED)에 따라 조건 분기
+     * - 결과는 QuestionDto로 변환하여 반환
+     *
+     * @param instructorId 강사 ID
+     * @param status 질문 상태 (null, PENDING, ANSWERED)
+     * @return 강사의 클래스들에 달린 질문 리스트
+     */
+    public List<QuestionDto> getQuestionsForInstructor(Long instructorId, String status) {
+        List<Classes> classes = classesRepository.findByInstructorId(instructorId);
+
+        if (classes.isEmpty()) {
+            return List.of();
+        }
+
+        // 클래스 → 강의 → 질문 순으로 뽑기
+        return classes.stream()
+                .flatMap(cls -> lectureRepository.findByClasses(cls).stream())
+                .flatMap(lecture -> {
+                    if ("PENDING".equals(status)) {
+                        return questionRepository.findByLectureIdAndStatus(lecture.getId(), QuestionStatus.IN_PROGRESS).stream();
+                    } else if ("ANSWERED".equals(status)) {
+                        return questionRepository.findByLectureIdAndStatus(lecture.getId(), QuestionStatus.ANSWERED).stream();
+                    } else {
+                        return questionRepository.findByLectureId(lecture.getId()).stream();
+                    }
+                })
+                .map(qnaMapper::toQuestionDto)
+                .toList();
+    }
 }
