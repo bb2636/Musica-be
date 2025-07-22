@@ -1,33 +1,70 @@
-name: Deploy Backend to EC2
+name: autodeployment with git-action
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - develop   # ✅ develop 브랜치도 포함하고 싶다면 여기에 추가하세요
 
 jobs:
-  deploy:
+  build-job:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v3
+      - name: GitHub Repository 소스 가져오기
+        uses: actions/checkout@v4
 
-      - name: Copy files via SSH
-        uses: appleboy/scp-action@v0.1.4
+      - name: JDK 17 설치
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: application.yml 추가
+        run: |
+          mkdir -p src/main/resources
+          echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
+
+      - name: Gradle 빌드
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build -x test
+
+      - name: 빌드된 jar 파일 이름 변경 및 이동
+        run: |
+          mv ./build/libs/*SNAPSHOT.jar ./app.jar
+          ls -al
+
+      - name: app.jar를 EC2로 전송
+        uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
-          source: "."
-          target: "/home/ubuntu/app"
+          source: ./app.jar
+          target: /home/ubuntu/prod/tobe
 
-      - name: Execute remote commands
-        uses: appleboy/ssh-action@v1.0.0
+  deploy-job:
+    needs: build-job
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: EC2에 SSH 접속하여 앱 배포
+        uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_KEY }}
+          script_stop: true
           script: |
-            cd /home/ubuntu/app
-            npm install
-            pm2 restart all
+            echo "🔁 기존 앱 종료"
+            sudo fuser -k -n tcp 8080 || true
+
+            echo "🧹 이전 배포 삭제 및 이동"
+            rm -rf /home/ubuntu/prod/cur
+            mkdir -p /home/ubuntu/prod/cur
+            mv /home/ubuntu/prod/tobe/app.jar /home/ubuntu/prod/cur/
+
+            echo "🚀 새 앱 실행"
+            cd /home/ubuntu/prod/cur
+            sudo nohup java -jar app.jar > output.log 2>&1 &
