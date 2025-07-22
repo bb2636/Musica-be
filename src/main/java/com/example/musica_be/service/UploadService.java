@@ -40,6 +40,7 @@ public class UploadService {
         String uploadUrl = S3PresignedUrl.generateUploadUrl(
             s3Presigner, bucket, key, request.getContentType(), Duration.ofMinutes(5)
         );
+        System.out.println("uploadUrl = " + uploadUrl);
 
         String viewUrl = S3PresignedUrl.generateDownloadUrl(
             s3Presigner, bucket, key, Duration.ofMinutes(5)
