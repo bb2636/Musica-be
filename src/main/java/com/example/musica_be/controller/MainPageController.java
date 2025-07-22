@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Collections;
 import java.util.List;
 
 @RestController
@@ -31,7 +32,7 @@ public class MainPageController {
         String role = JwtUtils.extractRole(jwt);
 
         if (!"USER".equalsIgnoreCase(role)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return ResponseEntity.ok(Collections.emptyList()); // ✅ 빈 리스트 리턴
         }
 
         List<ClassCardDto> result = classesService.getRecommendedClasses(userId);
