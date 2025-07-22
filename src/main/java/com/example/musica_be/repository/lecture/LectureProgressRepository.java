@@ -20,4 +20,5 @@ public interface LectureProgressRepository extends JpaRepository<LectureProgress
     int countByUserIdAndClassIdAndIsCompletedTrue(@Param("userId") Long userId, @Param("classId") Long classId);
     @Query("SELECT lp FROM LectureProgress lp WHERE lp.user.id = :userId AND lp.lecture.classes.id = :classId")
     List<LectureProgress> findAllByUserIdAndClassId(@Param("userId") Long userId, @Param("classId") Long classId);
+    Optional<LectureProgress> findByUserIdAndLectureId(Long userId, Long lectureId);
 }

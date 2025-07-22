@@ -22,6 +22,7 @@ public class LectureDetailResDto {
     private Integer duration;
     private Integer progress;
     private Boolean isCompleted;
+    private Long classId;
 
     private Map<String, Boolean> detectedInstruments;
     private Map<String, Double> confidenceScores;
@@ -74,9 +75,11 @@ public class LectureDetailResDto {
             .duration(lecture.getDuration())
             .progress(progress != null ? progress.getWatchedSeconds() : 0)
             .isCompleted(progress != null && Boolean.TRUE.equals(progress.getIsCompleted()))
+            .classId(lecture.getClasses().getId())
             .detectedInstruments(instrumentsMap)
             .confidenceScores(confidenceMap)
             .thresholds(thresholdsMap)
             .build();
     }
+
 }

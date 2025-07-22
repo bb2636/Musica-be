@@ -122,7 +122,13 @@ public class LectureController {
         @PathVariable Long lectureId,
         @RequestBody @Valid LectureProgressSaveReqDto dto
     ) {
-        lectureService.saveProgress(jwt, lectureId, dto);
+        if (jwt == null || jwt.isBlank()) {
+            System.out.println("인증 토큰이 없습니다.");
+        }
+        Long userId = JwtUtils.extractUserId(jwt);
+        System.out.println("jwt = " + jwt);
+        System.out.println("userId = " + userId);
+        lectureService.saveProgress(userId, lectureId, dto);
         return ResponseEntity.ok().build();
     }
 
@@ -137,13 +143,4 @@ public class LectureController {
         return ResponseEntity.ok(urls);
     }
 
-    // 강의 영상 시청을 위한 API
-    // 클라이언트에 강의 영상 or 파일 다운로드 url 을 반환
-    // 강의 다운로드 URL 요청
-    // todo: 테스트용 컨트롤러로 api 테스트 완료 후 주석 처리하거나 삭제해야 함
-    @GetMapping("/lectures/view-url")
-    public ResponseEntity<?> getDownloadUrl(@RequestParam String key) {
-        String url = lectureService.generatePresignedDownloadUrl(key);
-        return ResponseEntity.ok(Map.of("downloadUrl", url));
-    }
 }

@@ -248,37 +248,32 @@ public class LectureService {
 
     // 특정 사용자의 특정 강의에 대한 시청 시간을 저장하거나 갱신하는 로직
     @Transactional
-    public void saveProgress(String jwt, Long lectureId, LectureProgressSaveReqDto dto) {
-        // 1. JWT 토큰에서 사용자 ID 추출
-        Long userId = JwtUtils.extractUserId(jwt);
-
-        // 2. 강의 ID로 강의 정보 조회 (없으면 예외 발생)
+    public void saveProgress(Long userId, Long lectureId, LectureProgressSaveReqDto dto) {
         Lecture lecture = lectureRepository.findById(lectureId)
-            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
+            .orElseThrow(() -> new IllegalArgumentException("강의가 존재하지 않습니다."));
 
-        // 3. 사용자 ID로 사용자 정보 조회 (없으면 예외 발생)
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다."));
+        User user = userRepository.getReferenceById(userId);
 
-        // 4. 기존 시청 기록 조회 (LectureProgress)
-        // - 이미 시청 이력이 있다면 가져오고
-        // - 없으면 새로운 객체 생성 (초기값: watchedSeconds=0, isCompleted=false)
-        LectureProgress progress = lectureProgressRepository
-            .findByUserAndLecture(user, lecture)
-            .orElse(LectureProgress.builder()
-                .user(user)
-                .lecture(lecture)
-                .watchedSeconds(0)
-                .isCompleted(false)
-                .build()
-            );
+        LectureProgress progress = lectureProgressRepository.findByUserAndLecture(user, lecture)
+            .orElseGet(() -> LectureProgress.create(user, lecture));
 
-        // 5. 시청 시간(watchedSeconds) 업데이트
-        // - 내부적으로 시청 완료 여부(isCompleted)도 자동 판단됨 (LectureProgress 도메인 메서드)
-        progress.updateProgress(dto.getWatchedSeconds());
+        boolean updated = false;
 
-        // 6. 변경사항 저장 (기존이면 update, 신규면 insert)
-        lectureProgressRepository.save(progress);
+        // ✅ 진도 시간 갱신 (더 큰 값일 때만)
+        if (dto.getWatchedSeconds() > progress.getWatchedSeconds()) {
+            progress.updateProgress(dto.getWatchedSeconds()); // 시간 + 완료 상태 자동 처리
+            updated = true;
+        }
+
+        // ✅ 완료 체크만 누른 경우 (시간 동일하지만 완료만 눌렀을 때)
+        if (dto.getCompleted() && !progress.getIsCompleted()) {
+            progress.setCompleted(true);
+            updated = true;
+        }
+
+        if (updated) {
+            lectureProgressRepository.save(progress);
+        }
     }
 
     // 강의 목록 조회
@@ -338,32 +333,6 @@ public class LectureService {
             .map(LectureSummaryDto::from) // 진행률 없음
             .collect(Collectors.toList());
     }
-
-    // 강의 시청 (간단히 videoUrl 과 진행률만 응답)
-    // videoUrl - S3 Presigned Download URL
-//    @Transactional(readOnly = true)
-//    public LectureWatchResDto watchLecture(String jwt, Long lectureId) {
-//        // 유저 인증 여부는 단순 확인용 (특별한 로직 없이)
-//        // todo: 유저 인증 구현
-//        Long userId = JwtUtils.extractUserId(jwt);
-//
-//        // 존재하는 강의인지 확인
-//        Lecture lecture = lectureRepository.findById(lectureId)
-//            .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
-//
-//        // lecture 에서 videoObjectKey 를 받아와 S3 Presigned Download URL 요청
-//        // 응답으로 온 downloadUrl 이 실제로 영상을 볼 수 있는 url
-//        String videoDownloadUrl = null;
-//        if (lecture.getVideoObjectKey() != null && !lecture.getVideoObjectKey().isBlank()) {
-//            videoDownloadUrl = generateDownloadUrl(lecture.getVideoObjectKey());
-//        }
-//        String fileDownloadUrl = null;
-//        if (lecture.getFileObjectKey() != null && !lecture.getFileObjectKey().isBlank()) {
-//            fileDownloadUrl = generateDownloadUrl(lecture.getFileObjectKey());
-//        }
-//
-//        return LectureWatchResDto.from(lecture, videoDownloadUrl, fileDownloadUrl);
-//    }
 
     // 강의 순서 변경
     @Transactional
