@@ -20,4 +20,5 @@ public class ClassStatisticsDto {
     private Long lectureCount;
     private Long studentCount;
     private Double averageRating;
+    private Long ratingCount;
 }
