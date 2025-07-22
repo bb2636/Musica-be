@@ -21,6 +21,7 @@ public class ClassCardDto {
     private int price;
     private double rating;
     private String categoryName;
+    private String instructorName; // 강사이름
 
     // 통계용
     private int ratingCount;
@@ -39,6 +40,7 @@ public class ClassCardDto {
                     .studentCount(0)
                     .wishlistCount(0)
                     .categoryName(cls.getCategory().getDisplayName())
+                    .instructorName(cls.getInstructor().getName())
                     .build();
         }
 
@@ -54,6 +56,7 @@ public class ClassCardDto {
                 .categoryName(Optional.ofNullable(cls.getCategory())
                         .map(Category::getDisplayName)
                         .orElse("미지정"))
+                .instructorName(cls.getInstructor().getName())
                 .build();
     }
 }
