@@ -80,10 +80,11 @@ public class SecurityConfig {
                     "/api/users/register",
                     "/api/auth/login",
                     "/api/meta/**", // 강사 마이페이지 내 본인 클래스 검색
-                    "/api/auth/refresh",  // ✅ refresh 토큰 엔드포인트 추가
+                    "/api/auth/refresh",  // refresh 토큰 엔드포인트 추가
                     "/api/admin/login",  // 관리자 로그인은 공개
                     "/api/dev/**", // 개발용 임의 데이터 삽입 컨트롤러
                     "/api/reviews/summary/lecture/**", // 후기 요약 AI
+                    "/api/reviews/summary/cards", // 요약 카드 API 공개 접근 허용
                     "/api/users/check-email", // 회원가입 시 이메일 중복 체크
                     "/api/levels", // 회원가입 시 레벨 테이블 불러오기
                     "/api/reviews/classes/**", // 클래스 별 후기 전체 조회
