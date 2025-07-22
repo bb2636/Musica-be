@@ -20,9 +20,9 @@ jobs:
           distribution: temurin
           java-version: 17
 
-      - name: application.yml 추가
+      - name: application yml 추가
         run: |
-          mkdir -p src/main/resources
+          mkdir -p src/main/resources || true
           echo "${{ secrets.APPLICATION_YML }}" > ./src/main/resources/application.yml
 
       - name: Gradle 빌드
