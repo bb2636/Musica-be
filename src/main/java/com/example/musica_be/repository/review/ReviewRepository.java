@@ -8,8 +8,10 @@ import com.example.musica_be.dto.classes.ClassesRatingAvgDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -96,4 +98,9 @@ public interface ReviewRepository extends JpaRepository<Review, Integer> {
     List<Review> findTop3ByClasses_Instructor_IdOrderByCreatedAtDesc(Long instructorId);
 
     Page<Review> findByClassesIn(List<Classes> classes, Pageable pageable);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Review r WHERE r.lecture.id IN :lectureIds")
+    void deleteByLectureIds(@Param("lectureIds") List<Long> lectureIds);
 }

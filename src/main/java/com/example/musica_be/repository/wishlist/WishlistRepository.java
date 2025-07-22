@@ -5,8 +5,10 @@ import com.example.musica_be.domain.classes.Classes;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.classes.ClassCardStatisticsDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +30,9 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Integer> {
     GROUP BY w.classes.id
     """)
     List<ClassCardStatisticsDto> getWishlistCounts(@Param("classIds") List<Long> classIds);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Wishlist w WHERE w.classes.id = :classId")
+    void deleteByClassId(@Param("classId") Long classId);
 }

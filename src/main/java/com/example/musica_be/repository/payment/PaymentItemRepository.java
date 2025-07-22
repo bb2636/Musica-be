@@ -6,8 +6,10 @@ import com.example.musica_be.domain.payment.PaymentItem;
 import com.example.musica_be.dto.classes.ClassCardStatisticsDto;
 import com.example.musica_be.dto.classes.ClassesStudentCountDto;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -76,4 +78,8 @@ public interface PaymentItemRepository extends JpaRepository<PaymentItem, Long> 
         """)
     List<ClassCardStatisticsDto> getStudentStatsForCard(@Param("classIds") List<Long> classIds);
 
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM PaymentItem pi WHERE pi.classes.id = :classId")
+    void deleteByClassesId(@Param("classId") Long classId);
 }

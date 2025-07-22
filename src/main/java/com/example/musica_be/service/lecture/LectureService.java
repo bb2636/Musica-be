@@ -193,17 +193,16 @@ public class LectureService {
     public void deleteLecture(String jwt, Long lectureId) {
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 1. 강의 존재 여부 확인
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의를 찾을 수 없습니다."));
 
-        // 2. 권한 확인
         validateInstructor(lecture.getClasses(), userId);
 
-        // ✅ 3. 연관된 악기 분석 데이터 먼저 삭제
+        // ✅ 연관 분석 데이터 먼저 삭제 + flush
         instrumentAnalysisRepository.deleteByLectureId(lectureId);
+        instrumentAnalysisRepository.flush(); // ← 이걸 꼭 추가해줘
 
-        // 4. 강의 삭제
+        // ✅ 강의 삭제
         lectureRepository.delete(lecture);
     }
 

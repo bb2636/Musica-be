@@ -8,8 +8,10 @@ import com.example.musica_be.domain.user.Level;
 import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.classes.*;
 import com.example.musica_be.dto.lecture.LectureSummaryDto;
+import com.example.musica_be.repository.cart.CartItemRepository;
 import com.example.musica_be.repository.classes.CategoryRepository;
 import com.example.musica_be.repository.classes.ClassesRepository;
+import com.example.musica_be.repository.instrumentAnalysis.InstrumentAnalysisRepository;
 import com.example.musica_be.repository.lecture.LectureProgressRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
@@ -43,6 +45,8 @@ public class ClassesService {
     private final ReviewRepository reviewRepository;
     private final PaymentItemRepository paymentItemRepository;
     private final WishlistRepository wishlistRepository;
+    private final InstrumentAnalysisRepository instrumentAnalysisRepository;
+    private final CartItemRepository cartItemRepository;
 
     // 클래스 등록
     @Transactional
@@ -108,12 +112,42 @@ public class ClassesService {
     public void deleteClass(Long classId, String jwt) {
         Long userId = JwtUtils.extractUserId(jwt);
 
-        // 존재하는 클래스인지 확인
+        // 1. 클래스 조회 및 권한 확인
         Classes classes = classesRepository.findById(classId)
             .orElseThrow(() -> new IllegalArgumentException("클래스를 찾을 수 없습니다."));
-        // 유저 권한 확인
         validateInstructorByClassAndUserId(classes, userId);
 
+        // 2. 강의 목록 조회
+        List<Lecture> lectures = lectureRepository.findByClasses(classes);
+        List<Long> lectureIds = lectures.stream().map(Lecture::getId).toList();
+
+        // ✅ 3. 리뷰 삭제
+        reviewRepository.deleteByLectureIds(lectureIds);
+        reviewRepository.flush();
+
+        // ✅ 4. 분석 데이터 삭제
+        for (Long lectureId : lectureIds) {
+            instrumentAnalysisRepository.deleteByLectureId(lectureId);
+        }
+        instrumentAnalysisRepository.flush();
+
+        // ✅ 5. 강의 삭제
+        lectureRepository.deleteAll(lectures);
+        lectureRepository.flush();
+
+        // ✅ 6. 위시리스트 삭제
+        wishlistRepository.deleteByClassId(classId);
+        wishlistRepository.flush();
+
+        // ✅ 7. 장바구니 항목 삭제
+        cartItemRepository.deleteByClassId(classId);
+        cartItemRepository.flush();
+
+        // ✅ 8. 결제 항목 삭제
+        paymentItemRepository.deleteByClassesId(classId);
+        paymentItemRepository.flush();
+
+        // ✅ 9. 클래스 삭제
         classesRepository.delete(classes);
     }
 
