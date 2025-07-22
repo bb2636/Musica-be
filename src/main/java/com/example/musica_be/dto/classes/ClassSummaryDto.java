@@ -43,6 +43,9 @@ public class ClassSummaryDto {
     /** 수강생들의 평균 별점 (0.0 ~ 5.0) */
     private double averageRating;
 
+    // 별점 수 ( == 리뷰 수 )
+    private int ratingCount;
+
     /**
      * 클래스 엔티티와 통계 정보를 기반으로 ClassSummaryDto 생성
      *
@@ -62,6 +65,7 @@ public class ClassSummaryDto {
             .totalLectureCount(stat != null ? stat.getLectureCount().intValue() : 0)
             .studentCount(stat != null ? stat.getStudentCount().intValue() : 0)
             .averageRating(stat != null ? stat.getAverageRating() : 0.0)
+            .ratingCount(stat != null ? stat.getRatingCount().intValue() : 0)
             .build();
     }
 }
