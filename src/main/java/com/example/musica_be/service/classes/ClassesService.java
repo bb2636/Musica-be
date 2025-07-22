@@ -561,6 +561,7 @@ public class ClassesService {
                 dto.getLectureCount(),  // 강의 수
                 0L,                     // 초기 수강생 수
                 0.0,                    // 초기 별점
+                0L,                     // 별점 수
                 0L                      // 별점 수
             ));
         }
@@ -569,15 +570,22 @@ public class ClassesService {
         List<ClassesStudentCountDto> studentCounts = paymentItemRepository.getStudentCounts(classIds);
         for (ClassesStudentCountDto dto : studentCounts) {
             // resultMap에 기존 값이 없다면 기본값으로 넣은 뒤, 수강생 수만 업데이트
-            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0, 0L))
+            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0, 0L, 0L))
                 .setStudentCount(dto.getStudentCount());
         }
 
         // 5. 평균 별점 조회: Review 테이블 기반으로 각 클래스별 평균 별점 집계
         List<ClassesRatingAvgDto> averageRatings = reviewRepository.getAverageRatings(classIds);
         for (ClassesRatingAvgDto dto : averageRatings) {
-            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0, 0L))
+            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0, 0L, 0L))
                 .setAverageRating(dto.getAverageRating());
+        }
+
+        // 6. 찜 수 추가
+        List<ClassCardStatisticsDto> wishlistCounts = wishlistRepository.getWishlistCounts(classIds);
+        for (ClassCardStatisticsDto dto : wishlistCounts) {
+            resultMap.computeIfAbsent(dto.getClassId(), id -> new ClassStatisticsDto(id, 0L, 0L, 0.0, 0L, 0L))
+                    .setWishlistCount(dto.getWishlistCount());
         }
 
         return resultMap;

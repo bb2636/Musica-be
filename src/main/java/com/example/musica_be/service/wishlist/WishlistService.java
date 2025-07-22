@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -88,25 +90,42 @@ public class WishlistService {
         // 찜 목록 가져오기
         List<Wishlist> wishlistList = wishlistRepository.findAllByUser(user);
 
-        // DTO 로 변환
+        // 🔥 찜 수 통계 한방 쿼리로 가져오기
+        List<Object[]> rawCounts = wishlistRepository.getWishlistCountsForUser(userId);
+        Map<Long, Long> wishlistCountMap = rawCounts.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        // DTO 변환
         List<WishlistClassListResponseDto.WishlistClassDto> result = wishlistList.stream()
-            .map(wishlist -> {
-                Classes c = wishlist.getClasses();
-                return WishlistClassListResponseDto.WishlistClassDto.builder()
-                    .classId(c.getId())
-                    .title(c.getTitle())
-                    .thumbnailUrl(c.getThumbnailUrl())
-                    .instructorName(c.getInstructor().getName())
-                    .price(c.getClassPrice())
-                    .createdAt(wishlist.getCreatedAt())
-                    .build();
-            }).toList();
+                .map(wishlist -> {
+                    Classes c = wishlist.getClasses();
+                    long wishlistCount = wishlistCountMap.getOrDefault(c.getId(), 0L);
+
+                    return WishlistClassListResponseDto.WishlistClassDto.builder()
+                            .classId(c.getId())
+                            .title(c.getTitle())
+                            .thumbnailUrl(c.getThumbnailUrl())
+                            .instructorName(c.getInstructor().getName())
+                            .price(c.getClassPrice())
+                            .createdAt(wishlist.getCreatedAt())
+                            .wishlistCount(wishlistCount)
+                            .build();
+                }).toList();
 
         return WishlistClassListResponseDto.builder()
-            .status("success")
-            .count(result.size())
-            .wishlist(result)
-            .build();
+                .status("success")
+                .count(result.size())
+                .wishlist(result)
+                .build();
+    }
+
+    public int getWishlistCount(Long classId) {
+        Classes classes = classesRepository.findById(classId)
+                .orElseThrow(() -> new IllegalArgumentException("해당 클래스가 존재하지 않습니다."));
+        return wishlistRepository.countByClasses(classes);
     }
 
 }

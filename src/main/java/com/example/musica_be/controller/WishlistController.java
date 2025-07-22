@@ -1,15 +1,15 @@
 package com.example.musica_be.controller;
 
-import com.example.musica_be.domain.user.User;
 import com.example.musica_be.dto.wishlist.WishlistActionResponseDto;
 import com.example.musica_be.dto.wishlist.WishlistClassListResponseDto;
-import com.example.musica_be.repository.user.UserRepository;
 import com.example.musica_be.service.wishlist.WishlistService;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -47,4 +47,12 @@ public class WishlistController {
         return ResponseEntity.ok(response);
     }
 
+    // ✅ 클래스별 찜 수 조회
+    @GetMapping("/classes/{classId}/count")
+    public ResponseEntity<Map<String, Object>> getWishlistCount(@PathVariable Long classId) {
+        int count = wishlistService.getWishlistCount(classId);
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", count);
+        return ResponseEntity.ok(result);
+    }
 }
