@@ -21,4 +21,5 @@ public class ClassStatisticsDto {
     private Long studentCount;
     private Double averageRating;
     private Long ratingCount;
+    private Long wishlistCount;
 }

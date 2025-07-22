@@ -45,6 +45,9 @@ public class ClassSummaryDto {
 
     // 별점 수 ( == 리뷰 수 )
     private int ratingCount;
+    // 찜수
+    private int wishlistCount;
+
 
     /**
      * 클래스 엔티티와 통계 정보를 기반으로 ClassSummaryDto 생성
@@ -66,6 +69,7 @@ public class ClassSummaryDto {
             .studentCount(stat != null ? stat.getStudentCount().intValue() : 0)
             .averageRating(stat != null ? stat.getAverageRating() : 0.0)
             .ratingCount(stat != null ? stat.getRatingCount().intValue() : 0)
-            .build();
+            .wishlistCount(stat != null ? stat.getWishlistCount().intValue() : 0)
+                .build();
     }
 }

@@ -26,6 +26,7 @@ public class WishlistClassListResponseDto {
         private String instructorName;
         private int price;
         private LocalDateTime createdAt;
+        private Long wishlistCount;
     }
 }
 
