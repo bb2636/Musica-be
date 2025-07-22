@@ -10,7 +10,7 @@ public class WebConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
+                .allowedOrigins("http://localhost:5173", "http://musica.o-r.kr")
                 .allowedMethods("*")
                 .allowedHeaders("*")
                 .allowCredentials(true); // JWT 쿠키 등 인증정보 포함 허용
