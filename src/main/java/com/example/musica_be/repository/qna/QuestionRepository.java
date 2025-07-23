@@ -3,6 +3,7 @@ package com.example.musica_be.repository.qna;
 import com.example.musica_be.domain.question.Question;
 import com.example.musica_be.domain.question.QuestionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -27,4 +28,8 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findTop3ByLecture_Classes_Instructor_IdOrderByCreatedAtDesc(Long instructorId);
 
     List<Question> findByLectureIdAndStatus(Long lectureId, QuestionStatus status);
+
+    @Modifying
+    @Query("DELETE FROM Question q WHERE q.lecture.id IN :lectureIds")
+    void deleteByLectureIds(@Param("lectureIds") List<Long> lectureIds);
 }

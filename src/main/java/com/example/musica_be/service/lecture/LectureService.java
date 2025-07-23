@@ -251,21 +251,19 @@ public class LectureService {
     public void saveProgress(Long userId, Long lectureId, LectureProgressSaveReqDto dto) {
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의가 존재하지 않습니다."));
-
         User user = userRepository.getReferenceById(userId);
 
-        LectureProgress progress = lectureProgressRepository.findByUserAndLecture(user, lecture)
-            .orElseGet(() -> LectureProgress.create(user, lecture));
+        LectureProgress progress = lectureProgressRepository
+            .findByUserIdAndLectureId(userId, lectureId)
+            .orElseGet(() -> LectureProgress.create(user, lecture)); // 없으면 새로 생성
 
         boolean updated = false;
 
-        // ✅ 진도 시간 갱신 (더 큰 값일 때만)
         if (dto.getWatchedSeconds() > progress.getWatchedSeconds()) {
-            progress.updateProgress(dto.getWatchedSeconds()); // 시간 + 완료 상태 자동 처리
+            progress.updateProgress(dto.getWatchedSeconds());
             updated = true;
         }
 
-        // ✅ 완료 체크만 누른 경우 (시간 동일하지만 완료만 눌렀을 때)
         if (dto.getCompleted() && !progress.getIsCompleted()) {
             progress.setCompleted(true);
             updated = true;
