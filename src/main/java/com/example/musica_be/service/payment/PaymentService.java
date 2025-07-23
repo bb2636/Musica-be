@@ -88,7 +88,8 @@ public class PaymentService {
           clazz.getTitle(),
           clazz.getThumbnailUrl(),
           clazz.getInstructor().getName(),
-          payment.getAmount(),
+//          payment.getAmount(),
+          paymentItem.getAmount(), // 개별 클래스 금액
           progressPercent,
           payment.getPaidAt()
       );

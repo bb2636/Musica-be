@@ -27,8 +27,7 @@ public class Classes {
     @Column(nullable = false)
     private String title;
 
-    @Lob // 대용량 텍스트
-    @Column(name = "description_html")
+    @Column(name = "description_html", columnDefinition = "TEXT")
     private String descriptionHtml;
 
     @ManyToOne(fetch = FetchType.LAZY)
