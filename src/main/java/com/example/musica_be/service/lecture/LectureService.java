@@ -253,29 +253,17 @@ public class LectureService {
             .orElseThrow(() -> new IllegalArgumentException("강의가 존재하지 않습니다."));
         User user = userRepository.getReferenceById(userId);
 
-        // ✅ 먼저 중복 여부 검사용 List 조회
-        List<LectureProgress> progresses = lectureProgressRepository.findAllByUserIdAndLectureId(userId, lectureId);
-
-        LectureProgress progress = progresses.stream()
-            .findFirst()
-            .orElseGet(() -> LectureProgress.create(user, lecture));
-
-        // ✅ 중복이 있다면 정리
-        if (progresses.size() > 1) {
-            for (int i = 1; i < progresses.size(); i++) {
-                lectureProgressRepository.delete(progresses.get(i));
-            }
-        }
+        LectureProgress progress = lectureProgressRepository
+            .findByUserIdAndLectureId(userId, lectureId)
+            .orElseGet(() -> LectureProgress.create(user, lecture)); // 없으면 새로 생성
 
         boolean updated = false;
 
-        // ✅ 진도 시간 갱신 (더 큰 값일 때만)
         if (dto.getWatchedSeconds() > progress.getWatchedSeconds()) {
             progress.updateProgress(dto.getWatchedSeconds());
             updated = true;
         }
 
-        // ✅ 완료 체크만 누른 경우 (시간 동일하지만 완료만 눌렀을 때)
         if (dto.getCompleted() && !progress.getIsCompleted()) {
             progress.setCompleted(true);
             updated = true;
