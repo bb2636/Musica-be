@@ -251,17 +251,27 @@ public class LectureService {
     public void saveProgress(Long userId, Long lectureId, LectureProgressSaveReqDto dto) {
         Lecture lecture = lectureRepository.findById(lectureId)
             .orElseThrow(() -> new IllegalArgumentException("강의가 존재하지 않습니다."));
-
         User user = userRepository.getReferenceById(userId);
 
-        LectureProgress progress = lectureProgressRepository.findByUserAndLecture(user, lecture)
+        // ✅ 먼저 중복 여부 검사용 List 조회
+        List<LectureProgress> progresses = lectureProgressRepository.findAllByUserIdAndLectureId(userId, lectureId);
+
+        LectureProgress progress = progresses.stream()
+            .findFirst()
             .orElseGet(() -> LectureProgress.create(user, lecture));
+
+        // ✅ 중복이 있다면 정리
+        if (progresses.size() > 1) {
+            for (int i = 1; i < progresses.size(); i++) {
+                lectureProgressRepository.delete(progresses.get(i));
+            }
+        }
 
         boolean updated = false;
 
         // ✅ 진도 시간 갱신 (더 큰 값일 때만)
         if (dto.getWatchedSeconds() > progress.getWatchedSeconds()) {
-            progress.updateProgress(dto.getWatchedSeconds()); // 시간 + 완료 상태 자동 처리
+            progress.updateProgress(dto.getWatchedSeconds());
             updated = true;
         }
 

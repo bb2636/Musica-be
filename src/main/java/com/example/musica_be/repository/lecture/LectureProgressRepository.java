@@ -25,4 +25,5 @@ public interface LectureProgressRepository extends JpaRepository<LectureProgress
     @Modifying
     @Query("DELETE FROM LectureProgress lp WHERE lp.lecture.id IN :lectureIds")
     void deleteByLectureIds(@Param("lectureIds") List<Long> lectureIds);
+    List<LectureProgress> findAllByUserIdAndLectureId(Long userId, Long lectureId);
 }
