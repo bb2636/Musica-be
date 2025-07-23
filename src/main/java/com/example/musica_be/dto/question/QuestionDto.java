@@ -15,6 +15,7 @@ public class QuestionDto {
     private Long classId;
     private Long lectureId;
     private Long userId;
+    private String answer;
     private String question;
     private LocalDateTime createdAt;
 }

@@ -3,10 +3,7 @@ package com.example.musica_be.controller;
 import com.example.musica_be.dto.answer.CreateAnswerReqDto;
 import com.example.musica_be.dto.answer.CreateAnswerResDto;
 import com.example.musica_be.dto.answer.InstructorAnswerDto;
-import com.example.musica_be.dto.question.CreateQuestionReqDto;
-import com.example.musica_be.dto.question.CreateQuestionResDto;
-import com.example.musica_be.dto.question.QuestionDto;
-import com.example.musica_be.dto.question.UpdateQuestionReqDto;
+import com.example.musica_be.dto.question.*;
 import com.example.musica_be.service.QnaService;
 import com.example.musica_be.util.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -86,4 +83,15 @@ public class QnaController {
         return ResponseEntity.ok(qnaService.getQuestionsForInstructor(instructorId, status));
     }
 
+    //강사 답변 수정
+    @PutMapping("/instructors/answers/{questionId}")
+    public ResponseEntity<?> updateAnswer(
+        @RequestHeader("Authorization") String jwt,
+        @PathVariable Long questionId,
+        @RequestBody UpdateAnswerReqDto request
+    ) throws Exception {
+        Long instructorId = JwtUtils.extractUserId(jwt);
+        qnaService.updateAnswer(questionId, request.getAnswer(), instructorId);
+        return ResponseEntity.ok().build();
+    }
 }

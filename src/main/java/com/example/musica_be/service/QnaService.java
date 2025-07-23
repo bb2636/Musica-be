@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.nio.file.AccessDeniedException;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -109,10 +110,6 @@ public class QnaService {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new IllegalArgumentException("사용자 없음"));
 
-        if (!"INSTRUCTOR".equals(user.getRole())) {
-            throw new AccessDeniedException("강사만 답변 가능");
-        }
-
         Question question = questionRepository.findById(request.getQuestionId())
                 .orElseThrow(() -> new IllegalArgumentException("질문 없음"));
 
@@ -182,5 +179,18 @@ public class QnaService {
                 })
                 .map(qnaMapper::toQuestionDto)
                 .toList();
+    }
+
+    // 강사 답변 수정
+    @Transactional
+    public void updateAnswer(Long questionId, String newAnswer, Long instructorId) throws AccessDeniedException {
+        Answer answer = answerRepository.findByQuestionId(questionId)
+            .orElseThrow(() -> new IllegalArgumentException("답변 없음"));
+        if (!answer.getUser().getId().equals(instructorId)) {
+            throw new AccessDeniedException("본인만 수정 가능");
+        }
+        answer.setAnswer(newAnswer);
+        answer.setCreatedAt(LocalDateTime.now()); // 수정일 갱신(선택)
+        answerRepository.save(answer);
     }
 }

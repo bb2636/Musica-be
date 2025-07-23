@@ -8,10 +8,11 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface AnswerRepository extends JpaRepository<Answer, Long> {
-
+    Optional<Answer> findByQuestionId(Long questionId);
     List<Answer> findByUserId(Long userId);
 
     // ✅ 강의 목록에 속한 질문들의 답변 먼저 삭제

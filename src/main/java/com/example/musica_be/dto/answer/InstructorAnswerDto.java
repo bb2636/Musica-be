@@ -10,7 +10,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class InstructorAnswerDto {
+    private Long questionId;
     private String question;
     private String title;
+    private String answer;
     private LocalDateTime createdAt;
 }
