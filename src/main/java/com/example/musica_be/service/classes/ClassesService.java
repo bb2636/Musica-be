@@ -16,6 +16,8 @@ import com.example.musica_be.repository.lecture.LectureProgressRepository;
 import com.example.musica_be.repository.lecture.LectureRepository;
 import com.example.musica_be.repository.payment.PaymentItemRepository;
 import com.example.musica_be.repository.payment.PaymentRepository;
+import com.example.musica_be.repository.qna.AnswerRepository;
+import com.example.musica_be.repository.qna.QuestionRepository;
 import com.example.musica_be.repository.review.ReviewRepository;
 import com.example.musica_be.repository.user.LevelRepository;
 import com.example.musica_be.repository.user.UserRepository;
@@ -47,6 +49,8 @@ public class ClassesService {
     private final WishlistRepository wishlistRepository;
     private final InstrumentAnalysisRepository instrumentAnalysisRepository;
     private final CartItemRepository cartItemRepository;
+    private final QuestionRepository questionRepository;
+    private final AnswerRepository answerRepository;
 
     // 클래스 등록
     @Transactional
@@ -121,33 +125,44 @@ public class ClassesService {
         List<Lecture> lectures = lectureRepository.findByClasses(classes);
         List<Long> lectureIds = lectures.stream().map(Lecture::getId).toList();
 
+        // ✅ 2-1. 진도 정보 삭제 (lecture_progress)
+        lectureProgressRepository.deleteByLectureIds(lectureIds);
+        lectureProgressRepository.flush();
+
         // ✅ 3. 리뷰 삭제
         reviewRepository.deleteByLectureIds(lectureIds);
         reviewRepository.flush();
 
-        // ✅ 4. 분석 데이터 삭제
+        // ✅ 4. 분석 데이터 삭제 (instrument_analysis)
         for (Long lectureId : lectureIds) {
             instrumentAnalysisRepository.deleteByLectureId(lectureId);
         }
         instrumentAnalysisRepository.flush();
 
-        // ✅ 5. 강의 삭제
+        answerRepository.deleteByLectureIds(lectureIds);
+        answerRepository.flush();
+
+        // ✅ 5. Q&A 질문 삭제 (question)
+        questionRepository.deleteByLectureIds(lectureIds);
+        questionRepository.flush();
+
+        // ✅ 6. 강의 삭제
         lectureRepository.deleteAll(lectures);
         lectureRepository.flush();
 
-        // ✅ 6. 위시리스트 삭제
+        // ✅ 7. 위시리스트 삭제
         wishlistRepository.deleteByClassId(classId);
         wishlistRepository.flush();
 
-        // ✅ 7. 장바구니 항목 삭제
+        // ✅ 8. 장바구니 항목 삭제
         cartItemRepository.deleteByClassId(classId);
         cartItemRepository.flush();
 
-        // ✅ 8. 결제 항목 삭제
+        // ✅ 9. 결제 항목 삭제
         paymentItemRepository.deleteByClassesId(classId);
         paymentItemRepository.flush();
 
-        // ✅ 9. 클래스 삭제
+        // ✅ 10. 클래스 삭제
         classesRepository.delete(classes);
     }
 

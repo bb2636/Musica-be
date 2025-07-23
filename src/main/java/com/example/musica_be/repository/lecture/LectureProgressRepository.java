@@ -4,6 +4,7 @@ import com.example.musica_be.domain.lecture.Lecture;
 import com.example.musica_be.domain.lecture.LectureProgress;
 import com.example.musica_be.domain.user.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,4 +22,7 @@ public interface LectureProgressRepository extends JpaRepository<LectureProgress
     @Query("SELECT lp FROM LectureProgress lp WHERE lp.user.id = :userId AND lp.lecture.classes.id = :classId")
     List<LectureProgress> findAllByUserIdAndClassId(@Param("userId") Long userId, @Param("classId") Long classId);
     Optional<LectureProgress> findByUserIdAndLectureId(Long userId, Long lectureId);
+    @Modifying
+    @Query("DELETE FROM LectureProgress lp WHERE lp.lecture.id IN :lectureIds")
+    void deleteByLectureIds(@Param("lectureIds") List<Long> lectureIds);
 }
