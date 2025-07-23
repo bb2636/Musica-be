@@ -2,20 +2,33 @@ package com.example.musica_be.service.category;
 
 import com.example.musica_be.domain.classes.Category;
 import com.example.musica_be.dto.category.CategoryReqDto;
+import com.example.musica_be.dto.category.CategoryResDto;
 import com.example.musica_be.repository.classes.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.transaction.annotation.Transactional;
-import java.util.List;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class CategoryService {
     private final CategoryRepository categoryRepository;
+
+    public List<CategoryResDto> getAllCategoriesResDto() {
+        return getAllCategories().stream()
+            .map(category -> CategoryResDto.builder()
+                .categoryId(category.getId())
+                .code(generateCodeFromName(category.getDisplayName()))
+                .displayName(category.getDisplayName())
+                .isActive(category.isActive())
+                .build())
+            .collect(Collectors.toList());
+    }
 
     /**
      * 📋 모든 카테고리 조회
