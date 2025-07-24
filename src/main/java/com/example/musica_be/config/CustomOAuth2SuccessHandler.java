@@ -52,7 +52,7 @@ public class CustomOAuth2SuccessHandler implements AuthenticationSuccessHandler 
         // 🔥 반드시 DB id를 JWT sub에 넣기
         String token = JwtUtils.generateAccessToken(email, String.valueOf(user.getId()), user.getRole().name(), name);
 
-        String redirectUrl = "http://localhost:5173/oauth-success?token=" + token;
+        String redirectUrl = "http://musica.o-r.kr/oauth-success?token=" + token;
         System.out.println("✅ 리디렉션 URL: " + redirectUrl);
         response.sendRedirect(redirectUrl);
     }
